@@ -11,3 +11,24 @@ message ServerStatus {
     required string host = 2;
     required int32 port = 3;
 }
+
+message UserCommand {
+    enum Command {
+        SERVER_STATUS = 0;
+    }
+
+    required Command command = 1;
+}
+
+message MessageWrapper {
+    enum Type {
+        USER_COMMAND = 1;
+    }
+
+    // Identifies which field is filled in
+    required Type type = 1;
+
+    // One of the following is filled in (corresponds to wrapped message type)
+    optional UserCommand user_command = 2;
+}
+

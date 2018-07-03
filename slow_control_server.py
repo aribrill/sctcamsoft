@@ -7,6 +7,7 @@ input or read-only monitors.
 
 import configparser
 import socketserver
+import threading
 
 import slow_control_pb2 as sc
 
@@ -28,13 +29,19 @@ class ServerHandler(socketserver.StreamRequestHandler):
         # the handler to read from and write to the client
         while True:
             # Read the message
-            self.message = self.rfile.readline().strip()
+            serialized_message = self.rfile.readline().strip()
             # If message is empty, close the connection
-            if not self.message: return
-            # If message is "status", send the status
-            if self.message == b"status":
-                print(server_status)
-            #self.wfile.write(server_state.name.encode())
+            if not serialized_message: return
+            # Otherwise, parse it
+            message_wrapper = sc.MessageWrapper()
+            message_wrapper.ParseFromString(serialized_message)
+            message_type = message_wrapper.type
+            # Take action depending on the message type and contents
+            if message_type == sc.MessageWrapper.USER_COMMAND:
+                command = message_wrapper.user_command.command
+                if command == sc.UserCommand.SERVER_STATUS:
+                    #self.wfile.write(server_status.SerializeToString())
+                    print(server_status)
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
