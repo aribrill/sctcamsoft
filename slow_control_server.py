@@ -5,11 +5,14 @@ interfaces, which may be either command-line or graphical interfaces for
 input or read-only monitors.
 """
 
+import configparser
 import socketserver
 
-# Settings
-HOST = "thinkpad"
-PORT = 31415
+# Load configuration
+config = configparser.ConfigParser()
+config.read('slow_control_config.ini')
+host = config['Networking']['Host']
+port = config['Networking'].getint('Port')
 
 # Start up the server
 class ServerHandler(socketserver.StreamRequestHandler):
@@ -28,10 +31,5 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 # Start up and run the server
-with ThreadedTCPServer((HOST, PORT), ServerHandler) as server:
+with ThreadedTCPServer((host, port), ServerHandler) as server:
     server.serve_forever()
-
-# Start main loop
-#while True:
-    # Read new messages
-    # Execute each message
