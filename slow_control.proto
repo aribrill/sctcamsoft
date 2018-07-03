@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package slow_control;
+
+message ServerStatus {
+    enum State {
+        READY = 0;
+    }
+
+    required State state = 1;
+    required string host = 2;
+    required int32 port = 3;
+}

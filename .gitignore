@@ -1,6 +1,12 @@
 # Configuration files
 *.ini
 
+# Compiled protocol buffer files
+*_pb2.py
+
+# Swap files
+*.swp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
