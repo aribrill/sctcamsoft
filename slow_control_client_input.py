@@ -17,7 +17,6 @@ def wrap_and_serialize_command(command):
     else:
         return None
     message_wrapper = sc.MessageWrapper()
-    message_wrapper.type = sc.MessageWrapper.USER_COMMAND
     message_wrapper.user_command.CopyFrom(user_command)
     return message_wrapper.SerializeToString()
 
@@ -43,4 +42,4 @@ while True:
         print("Command not recognized: {}".format(command))
         continue
     sock.sendall(serialized_command)
-    sock.send(bytes('\n', 'ascii'))
+    #sock.sendall(serialized_command + bytes('\n', 'ascii'))

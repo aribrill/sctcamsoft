@@ -25,22 +25,33 @@ server_status.port = config['Networking'].getint('Port')
 class ServerHandler(socketserver.StreamRequestHandler):
 
     def handle(self):
-        # self.rfile and self.wfile are file-like objects created by
-        # the handler to read from and write to the client
+
+        # Add the connection to the list of connections
+        connection = server_status.connections.add()
+        connection.client_type = sc.Connection.UNKNOWN
+        connection.status = sc.Connection.OPEN
+        connection.thread_id = threading.get_ident()
+
+        # Read and respond to messages from the connection until it's closed
         while True:
             # Read the message
-            serialized_message = self.rfile.readline().strip()
-            # If message is empty, close the connection
-            if not serialized_message: return
+            try:
+                serialized_message = self.request.recv(1024)
+                if not serialized_message: raise EOFError
+            except (ConnectionResetError, EOFError):
+                # If connection reset or message empty, close the connection
+                connection.status = sc.Connection.CLOSED
+                return
             # Otherwise, parse it
             message_wrapper = sc.MessageWrapper()
             message_wrapper.ParseFromString(serialized_message)
-            message_type = message_wrapper.type
+            wrapped_message = message_wrapper.WhichOneof('wrapped_message')
+            print(wrapped_message)
             # Take action depending on the message type and contents
-            if message_type == sc.MessageWrapper.USER_COMMAND:
+            if wrapped_message == 'user_command':
                 command = message_wrapper.user_command.command
                 if command == sc.UserCommand.SERVER_STATUS:
-                    #self.wfile.write(server_status.SerializeToString())
+                    #self.request.sendall(server_status.SerializeToString())
                     print(server_status)
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):

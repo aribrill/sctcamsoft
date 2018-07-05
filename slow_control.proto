@@ -1,15 +1,32 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package slow_control;
+
+message Connection {
+    enum ClientType {
+        UNKNOWN = 0;
+        USER_INPUT = 1;
+    }
+
+    enum Status {
+        OPEN = 0;
+        CLOSED = 1;
+    }
+
+    ClientType client_type = 1;
+    Status status = 2;
+    int64 thread_id = 3;
+}
 
 message ServerStatus {
     enum State {
         READY = 0;
     }
 
-    required State state = 1;
-    required string host = 2;
-    required int32 port = 3;
+    State state = 1;
+    string host = 2;
+    int32 port = 3;
+    repeated Connection connections = 4;
 }
 
 message UserCommand {
@@ -17,18 +34,11 @@ message UserCommand {
         SERVER_STATUS = 0;
     }
 
-    required Command command = 1;
+    Command command = 1;
 }
 
 message MessageWrapper {
-    enum Type {
-        USER_COMMAND = 1;
+    oneof wrapped_message {
+        UserCommand user_command = 1;
     }
-
-    // Identifies which field is filled in
-    required Type type = 1;
-
-    // One of the following is filled in (corresponds to wrapped message type)
-    optional UserCommand user_command = 2;
 }
-
