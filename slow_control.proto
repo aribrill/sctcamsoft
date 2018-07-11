@@ -2,11 +2,13 @@ syntax = "proto3";
 
 package slow_control;
 
+enum ClientType {
+    CLIENT_UNKNOWN = 0;
+    CLIENT_USER_INPUT = 1;
+    CLIENT_USER_OUTPUT = 2;
+}
+
 message Connection {
-    enum ClientType {
-        UNKNOWN = 0;
-        USER_INPUT = 1;
-    }
 
     enum Status {
         OPEN = 0;
@@ -39,6 +41,8 @@ message UserCommand {
 
 message MessageWrapper {
     oneof wrapped_message {
-        UserCommand user_command = 1;
+        ClientType client_type = 1;
+        UserCommand user_command = 2;
+        ServerStatus server_status = 3;
     }
 }

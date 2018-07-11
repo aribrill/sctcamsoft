@@ -32,6 +32,10 @@ sock.connect((server_host, server_port))
 
 # Start a terminal for user input
 print("SCT Slow Control - Input")
+# Identify self to server
+message_wrapper = sc.MessageWrapper()
+message_wrapper.client_type = sc.CLIENT_USER_INPUT
+sock.sendall(message_wrapper.SerializeToString())
 while True:
     command = input('> ')
     if command in ['exit', 'q']:
@@ -42,4 +46,3 @@ while True:
         print("Command not recognized: {}".format(command))
         continue
     sock.sendall(serialized_command)
-    #sock.sendall(serialized_command + bytes('\n', 'ascii'))
