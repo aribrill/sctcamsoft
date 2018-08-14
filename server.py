@@ -151,4 +151,5 @@ with open(args.config_file, 'r') as config_file:
     config = yaml.load(config_file)
 server = SlowControlServer(config)
 
+print("Slow Control Server")
 server.run_server()
