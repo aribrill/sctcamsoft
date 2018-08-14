@@ -1,21 +1,20 @@
 # Server for SCT Camera slow control
 
 import argparse
-from collections import namedtuple
 from enum import Enum, auto
 import selectors
 import socket
+import time
 
 import yaml
 
+from slow_control_classes import HighLevelCommand, Command
+from fan_control import FanController
 import slow_control_pb2 as sc
 
 class State(Enum):
     READY = auto()
     ERROR = auto()
-
-HighLevelCommand = namedtuple('HighLevelCommand', ['command', 'args'])
-Command = namedtuple('Command', ['device', 'command', 'args'])
 
 class UserHandler():
 
@@ -77,15 +76,19 @@ class UserHandler():
         
 class SlowControlServer():
    
-    def __init__(self, config):
+    def __init__(self, config, devices):
+        print("Slow Control Server")
+        print("Initializing server...")
         self.state = State.READY
         self.auto_commands = []
         self.user_handler = UserHandler(config['User Interface'])
-        self.device_controllers = {
-                'server': self
-                }
         self.update = {}
         self.high_level_commands = config['High Level Commands']
+        print("Initializing devices:")
+        self.device_controllers = {'server': self}
+        for device, controller in devices.items():
+            print("Initializing {}...".format(device))
+            self.device_controllers[device] = controller(config[device])
 
     def parse_high_level_command(self, high_level_command):
         # Get list of device commands with args assigned as specified
@@ -94,27 +97,26 @@ class SlowControlServer():
         device_commands = []
         for cmd_def in device_command_defs:
             cmd_args = {arg: high_level_command.args[arg] for arg in
-                    cmd_def['args']}
+                    cmd_def.get('args', [])}
             device_command = Command(cmd_def['device'], cmd_def['command'],
-                    cmd_args)
+                    cmd_args, cmd_def.get('params', {}))
             device_commands.append(device_command)
         return device_commands
     
     def execute_command(self, command):
         command_name = command.command
         device_controller = self.device_controllers[command.device]
-        # Execute a device command
-        if device_controller is not self:
-            try:
+        try:
+            # Execute a device command
+            if device_controller is not self:
                 device_update = device_controller.execute_command(command)
-            except Exception as e:
-                self.state = State.ERROR
-                print(e)
-                device_update = None
-        # Execute a server command
-        elif command_name == 'set_number':
-            self.number = command.args['number']
-            device_update = {'number': self.number}
+            # Execute a server command
+            elif command_name == 'sleep':
+                time.sleep(command.params['secs'])
+        except Exception as e:
+            self.state = State.ERROR
+            print(e)
+            device_update = None
         return {command.device: device_update} if device_update else None
 
     def process_update(self, update):
@@ -149,7 +151,8 @@ args = parser.parse_args()
 
 with open(args.config_file, 'r') as config_file:
     config = yaml.load(config_file)
-server = SlowControlServer(config)
 
-print("Slow Control Server")
+devices = {'fan': FanController}
+server = SlowControlServer(config, devices)
+
 server.run_server()

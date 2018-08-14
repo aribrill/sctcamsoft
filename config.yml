@@ -1,16 +1,28 @@
 # Configuration file for SCT Camera slow control
 
 User Interface:
-    host: thinkpad
-    input_port: 12345
-    output_port: 12346
+    host: null
+    input_port: null
+    output_port: null
+
+fan:
+    protocol: telnet
+    telnet_host: null
+    telnet_port: null
+    telnet_timeout: 5
 
 High Level Commands:
 
-    example:
-        args: [number]
+    setup_fan:
+        args: []
         device_commands:
-            - 
+            -
+                device: fan
+                command: turn_on
+            -
                 device: server
-                command: set_number
-                args: [number]
+                command: sleep
+                params: {secs: 3}
+            -
+                device: fan
+                command: read_current
