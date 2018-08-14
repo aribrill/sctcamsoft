@@ -2,47 +2,16 @@ syntax = "proto3";
 
 package slow_control;
 
-enum ClientType {
-    CLIENT_UNKNOWN = 0;
-    CLIENT_USER_INPUT = 1;
-    CLIENT_USER_OUTPUT = 2;
-}
-
-message Connection {
-
-    enum Status {
-        OPEN = 0;
-        CLOSED = 1;
-    }
-
-    ClientType client_type = 1;
-    Status status = 2;
-    int64 thread_id = 3;
-}
-
-message ServerStatus {
-    enum State {
-        READY = 0;
-    }
-
-    State state = 1;
-    string host = 2;
-    int32 port = 3;
-    repeated Connection connections = 4;
-}
-
 message UserCommand {
-    enum Command {
-        SERVER_STATUS = 0;
-    }
-
-    Command command = 1;
+    string command = 1;
+    map<string, string> args = 2;
 }
 
-message MessageWrapper {
-    oneof wrapped_message {
-        ClientType client_type = 1;
-        UserCommand user_command = 2;
-        ServerStatus server_status = 3;
+message UserUpdate {
+    
+    message DeviceUpdate {
+        map<string, string> updates = 1;
     }
+    
+    map<string, DeviceUpdate> devices = 1;
 }

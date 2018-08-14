@@ -1,0 +1,16 @@
+# Configuration file for SCT Camera slow control
+
+User Interface:
+    host: thinkpad
+    input_port: 12345
+    output_port: 12346
+
+High Level Commands:
+
+    example:
+        args: [number]
+        device_commands:
+            - 
+                device: server
+                command: set_number
+                args: [number]

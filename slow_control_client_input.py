@@ -3,46 +3,58 @@ Terminal to type in commands, the output of which are displayed
 in the output client to prevent blocking.
 """
 
-import configparser
+import argparse
 import socket
+
+import yaml
 
 import slow_control_pb2 as sc
 
-# Return a MessageWrapper containing the UserCommand corresponding
-# to the user-entered string. If the command isn't valid, return None.
-def wrap_and_serialize_command(command):
-    user_command = sc.UserCommand()
-    if command == "status":
-        user_command.command = sc.UserCommand.SERVER_STATUS
-    else:
-        return None
-    message_wrapper = sc.MessageWrapper()
-    message_wrapper.user_command.CopyFrom(user_command)
-    return message_wrapper.SerializeToString()
-
 # Load configuration
-config = configparser.ConfigParser()
-config.read('slow_control_config.ini')
-server_host = config['Networking']['Host']
-server_port = config['Networking'].getint('Port')
+parser = argparse.ArgumentParser()
+parser.add_argument('config_file', help='Path to slow control config file')
+args = parser.parse_args()
+
+with open(args.config_file, 'r') as config_file:
+    config = yaml.load(config_file)
+server_host = config['User Interface']['host']
+server_port = config['User Interface']['input_port']
 
 # Open a socket to the slow control server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((server_host, server_port))
 
+commands = config['High Level Commands']
+
+# Return a serialized message containing the UserCommand corresponding
+# to the input entered by the user. If the command isn't valid, return None.
+def parse_and_serialize_user_input(user_input):
+    user_input = user_input.strip().split(' ')
+    command = user_input[0]
+    if command not in commands:
+        raise ValueError("command '{}' not recognized".format(command))
+    args = commands[command]['args']
+    values = user_input[1:]
+    if len(args) != len(values):
+        raise IndexError("command '{}' requires {} arguments, {} given".format(
+            command, len(args), len(values)))
+    message = sc.UserCommand()
+    message.command = command
+    for arg, value in zip(args, values):
+        message.args[arg] = value
+    return message.SerializeToString()
+
 # Start a terminal for user input
 print("SCT Slow Control - Input")
 # Identify self to server
-message_wrapper = sc.MessageWrapper()
-message_wrapper.client_type = sc.CLIENT_USER_INPUT
-sock.sendall(message_wrapper.SerializeToString())
 while True:
-    command = input('> ')
-    if command in ['exit', 'q']:
+    user_input = input('> ')
+    if user_input in ['exit', 'q']:
         sock.close()
         break
-    serialized_command = wrap_and_serialize_command(command)
-    if not serialized_command:
-        print("Command not recognized: {}".format(command))
+    try:
+        serialized_command = parse_and_serialize_user_input(user_input)
+        sock.sendall(serialized_command)
+    except (ValueError, IndexError) as e:
+        print(e)
         continue
-    sock.sendall(serialized_command)
