@@ -35,6 +35,8 @@ class FanController(DeviceController):
                     self.ser = telnetlib.Telnet(host, port, timeout)
                 except socket.timeout as e:
                     print("WARNING: Could not connect to fan")
+                except ConnectionRefusedError as e:
+                    print("WARNING: Connection refused")
         else:
             raise ValueError("ERROR: Unknown protocol '{}'".format(protocol))
 

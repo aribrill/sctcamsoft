@@ -26,3 +26,18 @@ High Level Commands:
             -
                 device: fan
                 command: read_current
+
+    set_alert:
+        args: [device, variable, lower_limit, upper_limit]
+        device_commands:
+            -
+                device: server
+                command: set_alert
+                args: [device, variable, lower_limit, upper_limit]
+    test_value:
+        args: [test]
+        device_commands:
+            -
+                device: server
+                command: test
+                args: [test]

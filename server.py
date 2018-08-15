@@ -1,6 +1,7 @@
 # Server for SCT Camera slow control
 
 import argparse
+from collections import namedtuple
 from enum import Enum, auto
 import selectors
 import socket
@@ -15,6 +16,8 @@ import slow_control_pb2 as sc
 class State(Enum):
     READY = auto()
     ERROR = auto()
+
+Alert = namedtuple('Alert', ['device', 'variable', 'lower_limit', 'upper_limit'])
 
 class UserHandler():
 
@@ -80,6 +83,7 @@ class SlowControlServer():
         print("Slow Control Server")
         print("Initializing server...")
         self.state = State.READY
+        self.alerts = []
         self.auto_commands = []
         self.user_handler = UserHandler(config['User Interface'])
         self.update = {}
@@ -90,7 +94,7 @@ class SlowControlServer():
             print("Initializing {}...".format(device))
             self.device_controllers[device] = controller(config[device])
 
-    def parse_high_level_command(self, high_level_command):
+    def _parse_high_level_command(self, high_level_command):
         # Get list of device commands with args assigned as specified
         device_command_defs = self.high_level_commands[
                 high_level_command.command]['device_commands']
@@ -103,23 +107,30 @@ class SlowControlServer():
             device_commands.append(device_command)
         return device_commands
     
-    def execute_command(self, command):
-        command_name = command.command
+    def _execute_command(self, command):
+        cmd = command.command
         device_controller = self.device_controllers[command.device]
+        device_update = None
         try:
             # Execute a device command
             if device_controller is not self:
-                device_update = device_controller.execute_command(command)
+                device_update = device_controller._execute_command(command)
             # Execute a server command
-            elif command_name == 'sleep':
+            elif cmd == 'test': # for testing alerts
+                device_update = {'test': command.args['test']}
+            elif cmd == 'sleep':
                 time.sleep(command.params['secs'])
+            elif cmd == 'set_alert':
+                self.alerts.append(Alert(device=command.args['device'],
+                    variable=command.args['variable'],
+                    lower_limit=float(command.args['lower_limit']),
+                    upper_limit=float(command.args['upper_limit'])))
         except Exception as e:
             self.state = State.ERROR
             print(e)
-            device_update = None
         return {command.device: device_update} if device_update else None
 
-    def process_update(self, update):
+    def _process_update(self, update):
         if update is not None:
             for device, values in update.items():
                 if device not in self.update:
@@ -127,23 +138,46 @@ class SlowControlServer():
                 for key, value in values.items():
                     self.update[device][key] = value
     
-    def process_high_level_command(self, high_level_command):
-        device_commands = self.parse_high_level_command(high_level_command)
+    def _process_high_level_command(self, high_level_command):
+        device_commands = self._parse_high_level_command(high_level_command)
         for command in device_commands:
-            update = self.execute_command(command)
-            self.process_update(update)
+            update = self._execute_command(command)
+            self._process_update(update)
+
+    def _check_alerts(self):
+        for i, alert in enumerate(self.alerts):
+            alert_id = 'ALERT_{}'.format(i)
+            try:
+                alert_value = self.update[alert.device][alert.variable]
+            except KeyError as e: # no value to check, skip it
+                continue
+            try:
+                alert_value = float(alert_value)
+            except ValueError as e:
+                print("Warning: could not convert {} to float to check alert".format(alert_value))
+                continue
+            if not alert.lower_limit <= alert_value <= alert.upper_limit:
+                self.update[alert_id] = {
+                        'device': alert.device,
+                        'variable': alert.variable,
+                        'value': str(alert_value),
+                        'lower_limit': str(alert.lower_limit),
+                        'upper_limit': str(alert.upper_limit)
+                        }
 
     def run_server(self):
         # Start server main loop
         while True:
             # Perform auto commands
             for auto_command in self.auto_commands:
-                self.process_high_level_command(auto_command)
+                self._process_high_level_command(auto_command)
+            # Check alerts and add any found to update
+            self._check_alerts()
             # Send any updates to the user, and receive any commands
             user_command = self.user_handler.communicate_user(self.update)
             self.update = {}
             if user_command is not None:
-                self.process_high_level_command(user_command)
+                self._process_high_level_command(user_command)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Path to slow control config file')
