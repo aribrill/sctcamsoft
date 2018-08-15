@@ -2,9 +2,9 @@
 
 import argparse
 from collections import namedtuple
-from enum import Enum, auto
 import selectors
 import socket
+import threading
 import time
 
 import yaml
@@ -12,10 +12,6 @@ import yaml
 from slow_control_classes import HighLevelCommand, Command
 from fan_control import FanController
 import slow_control_pb2 as sc
-
-class State(Enum):
-    READY = auto()
-    ERROR = auto()
 
 Alert = namedtuple('Alert', ['device', 'variable', 'lower_limit', 'upper_limit'])
 
@@ -64,7 +60,7 @@ class UserHandler():
             user_update = sc.UserUpdate()
             for device in self.user_update:
                 for key, val in self.user_update[device].items():
-                    user_update.devices[device].updates[key] = val
+                    user_update.devices[device].updates[str(key)] = str(val)
             self.user_update = None
             message = user_update.SerializeToString() 
             conn.sendall(message)
@@ -82,9 +78,8 @@ class SlowControlServer():
     def __init__(self, config, devices):
         print("Slow Control Server")
         print("Initializing server...")
-        self.state = State.READY
         self.alerts = []
-        self.auto_commands = []
+        self.timers = []
         self.user_handler = UserHandler(config['User Interface'])
         self.update = {}
         self.high_level_commands = config['High Level Commands']
@@ -98,12 +93,17 @@ class SlowControlServer():
         # Get list of device commands with args assigned as specified
         device_command_defs = self.high_level_commands[
                 high_level_command.command]['device_commands']
+        user_input = high_level_command.args
         device_commands = []
         for cmd_def in device_command_defs:
-            cmd_args = {arg: high_level_command.args[arg] for arg in
-                    cmd_def.get('args', [])}
+            cmd_args = {}
+            for arg in cmd_def.get('args', []):
+                if arg in user_input:
+                    cmd_args[arg] = user_input[arg]
+                else:
+                    cmd_args[arg] = cmd_def['values'][arg]
             device_command = Command(cmd_def['device'], cmd_def['command'],
-                    cmd_args, cmd_def.get('params', {}))
+                    cmd_args)
             device_commands.append(device_command)
         return device_commands
     
@@ -114,20 +114,35 @@ class SlowControlServer():
         try:
             # Execute a device command
             if device_controller is not self:
-                device_update = device_controller._execute_command(command)
+                device_update = device_controller.execute_command(command)
             # Execute a server command
-            elif cmd == 'test': # for testing alerts
-                device_update = {'test': command.args['test']}
             elif cmd == 'sleep':
-                time.sleep(command.params['secs'])
+                time.sleep(float(command.args['secs']))
             elif cmd == 'set_alert':
                 self.alerts.append(Alert(device=command.args['device'],
                     variable=command.args['variable'],
                     lower_limit=float(command.args['lower_limit']),
                     upper_limit=float(command.args['upper_limit'])))
+            elif cmd == 'repeat_high_level_command':
+                repeat_cmd = HighLevelCommand(
+                        command=command.args['high_level_command'],
+                        args={})
+                timer_index = len(self.timers)
+                timer = {'passed': True, 'command': repeat_cmd}
+                self.timers.append(timer)
+                def start_timer():
+                    self.timers[timer_index]['passed'] = True
+                    threading.Timer(float(command.args['interval']),
+                            start_timer).start()
+                start_timer()
+            elif cmd == '_process_timed_commands':
+                for timer in self.timers:
+                    if timer['passed']:
+                        timer['passed'] = False
+                        self._process_high_level_command(timer['command'])
         except Exception as e:
-            self.state = State.ERROR
-            print(e)
+            raise
+            
         return {command.device: device_update} if device_update else None
 
     def _process_update(self, update):
@@ -160,17 +175,17 @@ class SlowControlServer():
                 self.update[alert_id] = {
                         'device': alert.device,
                         'variable': alert.variable,
-                        'value': str(alert_value),
-                        'lower_limit': str(alert.lower_limit),
-                        'upper_limit': str(alert.upper_limit)
+                        'value': alert_value,
+                        'lower_limit': alert.lower_limit,
+                        'upper_limit': alert.upper_limit
                         }
 
     def run_server(self):
         # Start server main loop
         while True:
-            # Perform auto commands
-            for auto_command in self.auto_commands:
-                self._process_high_level_command(auto_command)
+            # Process any commands on an automatic timer
+            self._execute_command(Command(device='server',
+                command='_process_timed_commands', args={}))
             # Check alerts and add any found to update
             self._check_alerts()
             # Send any updates to the user, and receive any commands

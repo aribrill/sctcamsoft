@@ -13,6 +13,60 @@ fan:
 
 High Level Commands:
 
+    monitor_fan:
+        args: []
+        device_commands:
+            -
+                device: server
+                command: set_alert
+                args: [device, variable, lower_limit, upper_limit]
+                values: 
+                    device: fan
+                    variable: voltage
+                    lower_limit: 23 #V
+                    upper_limit: 25 #V
+            -
+                device: server
+                command: set_alert
+                args: [device, variable, lower_limit, upper_limit]
+                values: 
+                    device: fan
+                    variable: current
+                    lower_limit: 14 #A
+                    upper_limit: 16 #A
+            -
+                device: server
+                command: repeat_high_level_command
+                args: [high_level_command, interval]
+                values: {high_level_command: read_fan_voltage, interval: 30}
+            -
+                device: server
+                command: repeat_high_level_command
+                args: [high_level_command, interval]
+                values: {high_level_command: read_fan_current, interval: 30}
+
+    read_fan_current:
+        args: []
+        device_commands:
+            -
+                device: fan
+                command: read_current
+    
+    read_fan_voltage:
+        args: []
+        device_commands:
+            -
+                device: fan
+                command: read_voltage
+
+    set_alert:
+        args: [device, variable, lower_limit, upper_limit]
+        device_commands:
+            -
+                device: server
+                command: set_alert
+                args: [device, variable, lower_limit, upper_limit]
+
     setup_fan:
         args: []
         device_commands:
@@ -22,22 +76,8 @@ High Level Commands:
             -
                 device: server
                 command: sleep
-                params: {secs: 3}
+                args: [secs]
+                values: {secs: 3}
             -
                 device: fan
                 command: read_current
-
-    set_alert:
-        args: [device, variable, lower_limit, upper_limit]
-        device_commands:
-            -
-                device: server
-                command: set_alert
-                args: [device, variable, lower_limit, upper_limit]
-    test_value:
-        args: [test]
-        device_commands:
-            -
-                device: server
-                command: test
-                args: [test]
