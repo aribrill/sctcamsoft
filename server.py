@@ -116,6 +116,8 @@ class SlowControlServer():
             if device_controller is not self:
                 device_update = device_controller.execute_command(command)
             # Execute a server command
+            elif cmd == 'print_message':
+                device_update = {'message'+str(command.args['msg_num']): command.args['message']}
             elif cmd == 'sleep':
                 time.sleep(float(command.args['secs']))
             elif cmd == 'set_alert':

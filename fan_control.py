@@ -37,6 +37,8 @@ class FanController(DeviceController):
                     print("WARNING: Could not connect to fan")
                 except ConnectionRefusedError as e:
                     print("WARNING: Connection refused")
+                except OSError as e:
+                    print("WARNING: Camera fan power supply unavailable")
         else:
             raise ValueError("ERROR: Unknown protocol '{}'".format(protocol))
 
@@ -56,7 +58,6 @@ class FanController(DeviceController):
     def _turn_off(self):
         self._send_cmd("PWR OFF")
         self.close()
-        time.sleep(1)
     
     def _read_voltage(self):
         val = self._send_cmd("VREAD")
