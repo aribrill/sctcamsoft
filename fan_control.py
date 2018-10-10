@@ -43,9 +43,10 @@ class FanController(DeviceController):
             raise ValueError("ERROR: Unknown protocol '{}'".format(protocol))
 
     def _send_cmd(self, cmd):
-        self.ser.write("{}\n".format(cmd))
-        time.sleep(0.1)
-        val = self.ser.read_all()
+        self.ser.write("{}\n".format(cmd).encode('ascii'))
+        time.sleep(0.5)
+        val = self.ser.read_until('\n'.encode(), timeout=1)
+        val = val.decode()[:6] # strip non-numerical output
         return val
 
     def _close(self):
@@ -57,7 +58,7 @@ class FanController(DeviceController):
 
     def _turn_off(self):
         self._send_cmd("PWR OFF")
-        self.close()
+        self._close()
     
     def _read_voltage(self):
         val = self._send_cmd("VREAD")
@@ -75,7 +76,7 @@ class FanController(DeviceController):
         if cmd == "turn_on":
             self._turn_on()
         elif cmd == "turn_off":
-            fan._turn_off()
+            self._turn_off()
         elif cmd == "read_voltage":
             voltage = self._read_voltage()
             update = {'voltage': voltage}
