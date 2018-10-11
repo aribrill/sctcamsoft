@@ -1,9 +1,10 @@
 # Low level commands
+fan:open_connection: {device: fan, command: open_connection}
+fan:close_connection: {device: fan, command: close_connection}
 fan:turn_on: {device: fan, command: turn_on}
 fan:turn_off: {device: fan, command: turn_off}
 fan:read_voltage: {device: fan, command: read_voltage}
 fan:read_current: {device: fan, command: read_current}
-fan:close_connection: {device: fan, command: close_connection}
 power:turn_on_main_switch: {device: power, command: turn_on_main_switch}
 power:turn_off_main_switch: {device: power, command: turn_off_main_switch}
 power:start_supply: {device: power, command: start_supply}

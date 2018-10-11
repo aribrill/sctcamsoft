@@ -17,27 +17,35 @@ from slow_control_classes import Command, DeviceController
 class FanController(DeviceController):
 
     def __init__(self, config):
-        protocol = config.get('protocol', 'telnet')
-        self._is_ready = False
+        self._protocol = config.get('protocol', 'telnet')
+        self._ser = None
+        self._open_connection()
+        if not self.is_ready():
+            print("Warning: fan control not set up")
+
+    def _open_connection(self):
+        if self._ser is not None:
+            print("Warning: connection to fan is already open, close before "
+                    "reopening.")
+            return 
         try:
-            if protocol == 'serial':
-                self.ser = serial.Serial(port='/dev/ttyACM0',
+            if self._protocol == 'serial':
+                self._ser = serial.Serial(port='/dev/ttyACM0',
                         baudrate=115200,
                         bytesize=8,
                         parity='N',
                         stopbits=1)
-            elif protocol == 'telnet':
+            elif self._protocol == 'telnet':
                 host = config['telnet_host']
                 port = config['telnet_port']
                 timeout = config.get('telnet_timeout', None)
                 if timeout is None:
-                    self.ser = telnetlib.Telnet(host, port)
+                    self._ser = telnetlib.Telnet(host, port)
                 else:
-                    self.ser = telnetlib.Telnet(host, port, timeout)
+                    self._ser = telnetlib.Telnet(host, port, timeout)
             else:
                 raise ValueError("ERROR: Unknown protocol '{}'".format(
-                    protocol))
-            self._is_ready = True
+                    self._protocol))
         except socket.timeout as e:
             print("WARNING: Could not connect to fan")
         except ConnectionRefusedError as e:
@@ -45,35 +53,16 @@ class FanController(DeviceController):
         except OSError as e:
             print("WARNING: Camera fan power supply unavailable")
 
-    def _send_cmd(self, cmd):
-        try:
-            self.ser.write("{}\n".format(cmd).encode('ascii'))
-            time.sleep(0.5)
-            val = self.ser.read_until('\n'.encode('ascii'), timeout=1)
-            val = val.decode('ascii')[:6] # strip non-numerical output
-        except AttributeError as e:
-            # No connection opened
-            print("Warning: No connection to fan")
-            val = None
-            self._is_ready = False
-        return val
-
     def _close_connection(self):
-        self.ser.close()
+        if self._ser is not None:
+            self._ser.close()
+        self._ser = None
 
-    def _turn_on(self): 
-        #5V pulse, used to trigger a laser when not using the LED
-        self._send_cmd("PWR ON")
-
-    def _turn_off(self):
-        self._send_cmd("PWR OFF")
-    
-    def _read_voltage(self):
-        val = self._send_cmd("VREAD")
-        return val
-
-    def _read_current(self):
-        val = self._send_cmd("IREAD")
+    def _send_cmd(self, cmd):
+        self._ser.write("{}\n".format(cmd).encode('ascii'))
+        time.sleep(0.5)
+        val = self._ser.read_until('\n'.encode('ascii'), timeout=1)
+        val = val.decode('ascii')[:6] # strip non-numerical output
         return val
 
     def execute_command(self, command):
@@ -82,21 +71,23 @@ class FanController(DeviceController):
         if not self.is_ready():
             print("Warning: skipping command, fan is not ready")
             return update
-        if cmd == "turn_on":
-            self._turn_on()
+        if cmd == "open_connection":
+            self._open_connection()
+        elif cmd == "close_connection":
+            self._close_connection()
+        elif cmd == "turn_on":
+            self._send_cmd("PWR ON")
         elif cmd == "turn_off":
-            self._turn_off()
+            self._send_cmd("PWR OFF")
         elif cmd == "read_voltage":
-            voltage = self._read_voltage()
+            voltage = self._send_cmd("VREAD")
             update = {'voltage': voltage}
         elif cmd == "read_current":
-            current = self._read_current()
+            current = self._send_cmd("IREAD")
             update = {'current': current}
-        elif cmd == "close_connection":
-            self._close()
         else:
             raise ValueError("command {} not recognized".format(cmd))
         return update
 
     def is_ready(self):
-        return self._is_ready
+        return (self._ser is not None)
