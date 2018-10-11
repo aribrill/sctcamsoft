@@ -80,7 +80,7 @@ class PowerController(DeviceController):
             # Parse output string to get numerical reading
             # Units are V and A
             update = float(completed_process.stdout.split()[-2])
-            return {'power_value': update_commands[cmd]}
+            return {update_commands[cmd]: update}
         else:
             raise ValueError("command {} not recognized".format(cmd))
 
