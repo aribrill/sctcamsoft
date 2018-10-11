@@ -5,6 +5,7 @@ in the output client to prevent blocking.
 
 import argparse
 import socket
+import shlex
 
 import yaml
 
@@ -31,11 +32,11 @@ with open(args.commands_file, 'r') as commands_file:
 # Return a serialized message containing the UserCommand corresponding
 # to the input entered by the user. If the command isn't valid, return None.
 def parse_and_serialize_user_input(user_input):
-    user_input = user_input.strip().split(' ')
+    user_input = shlex.split(user_input.strip())
     command = user_input[0]
     if command not in commands:
         raise ValueError("command '{}' not recognized".format(command))
-    args = commands[command]['args']
+    args = commands[command].get('args', [])
     values = user_input[1:]
     if len(args) != len(values):
         raise IndexError("command '{}' requires {} arguments, {} given".format(

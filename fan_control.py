@@ -58,7 +58,7 @@ class FanController(DeviceController):
             self._is_ready = False
         return val
 
-    def _close(self):
+    def _close_connection(self):
         self.ser.close()
 
     def _turn_on(self): 
@@ -92,7 +92,7 @@ class FanController(DeviceController):
         elif cmd == "read_current":
             current = self._read_current()
             update = {'current': current}
-        elif cmd == "close":
+        elif cmd == "close_connection":
             self._close()
         else:
             raise ValueError("command {} not recognized".format(cmd))

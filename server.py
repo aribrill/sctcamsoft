@@ -84,6 +84,8 @@ class SlowControlServer():
         self.user_handler = UserHandler(config['User Interface'])
         self.update = {}
         self.high_level_commands = high_level_commands
+        # For uniquely labeling messages; reset in each update
+        self.message_count = 0
         print("Initializing devices:")
         self.device_controllers = {'server': self}
         for device, controller in devices.items():
@@ -91,21 +93,39 @@ class SlowControlServer():
             self.device_controllers[device] = controller(config[device])
 
     def _parse_high_level_command(self, high_level_command):
-        # Get list of device commands with args assigned as specified
-        device_command_defs = self.high_level_commands[
-                high_level_command.command]['device_commands']
-        user_input = high_level_command.args
-        device_commands = []
-        for cmd_def in device_command_defs:
+        
+        # Set up a device command, combining arguments from user input
+        # and from prespecified values
+        def set_up_command(cmd_def, user_input):
+            args = cmd_def.get('args', [])
+            values = cmd_def.get('values', {})
             cmd_args = {}
-            for arg in cmd_def.get('args', []):
+            for arg in args:
                 if arg in user_input:
                     cmd_args[arg] = user_input[arg]
+                elif arg in values:
+                    cmd_args[arg] = values[arg]
                 else:
-                    cmd_args[arg] = cmd_def['values'][arg]
+                    cmd_args[arg] = None
+                    print("Warning: no input or value for argument '{}'"
+                            "specified".format(arg))
             device_command = Command(cmd_def['device'], cmd_def['command'],
                     cmd_args)
-            device_commands.append(device_command)
+            return device_command
+        
+        user_input = high_level_command.args
+        # Get list of device commands with args assigned as specified
+        try:
+            device_command_defs = self.high_level_commands[
+                    high_level_command.command]['device_commands']
+        except KeyError as e:
+            # If no list of device commands, this is really a low level command
+            cmd_def = self.high_level_commands[high_level_command.command]
+            return [set_up_command(cmd_def, user_input)]
+
+        # This is a high level command
+        device_commands = [set_up_command(cmd_def, user_input) for cmd_def in
+                device_command_defs]
         return device_commands
     
     def _execute_command(self, command):
@@ -118,7 +138,8 @@ class SlowControlServer():
                 device_update = device_controller.execute_command(command)
             # Execute a server command
             elif cmd == 'print_message':
-                device_update = {'message'+str(command.args['msg_num']): command.args['message']}
+                device_update = {'message'+str(self.message_count): command.args['message']}
+                self.message_count += 1
             elif cmd == 'sleep':
                 time.sleep(float(command.args['secs']))
             elif cmd == 'set_alert':
@@ -126,9 +147,9 @@ class SlowControlServer():
                     variable=command.args['variable'],
                     lower_limit=float(command.args['lower_limit']),
                     upper_limit=float(command.args['upper_limit'])))
-            elif cmd == 'repeat_high_level_command':
+            elif cmd == 'set_repeating_command':
                 repeat_cmd = HighLevelCommand(
-                        command=command.args['high_level_command'],
+                        command=command.args['command'],
                         args={})
                 timer_index = len(self.timers)
                 timer = {'passed': True, 'command': repeat_cmd}
@@ -193,6 +214,7 @@ class SlowControlServer():
             self._check_alerts()
             # Send any updates to the user, and receive any commands
             user_command = self.user_handler.communicate_user(self.update)
+            self.message_count = 0
             self.update = {}
             if user_command is not None:
                 self._process_high_level_command(user_command)
