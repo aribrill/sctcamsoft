@@ -4,14 +4,14 @@ fan:turn_off: {device: fan, command: turn_off}
 fan:read_voltage: {device: fan, command: read_voltage}
 fan:read_current: {device: fan, command: read_current}
 fan:close_connection: {device: fan, command: close_connection}
-power:start_main_switch: {device: power, command: start_main_switch}
-power:stop_main_switch: {device: power, command: stop_main_switch}
-power:start_70V: {device: power, command: start_70V}
-power:stop_70V: {device: power, command: stop_70V}
+power:turn_on_main_switch: {device: power, command: turn_on_main_switch}
+power:turn_off_main_switch: {device: power, command: turn_off_main_switch}
+power:start_supply: {device: power, command: start_supply}
+power:stop_supply: {device: power, command: stop_supply}
 power:start_HV: {device: power, command: start_HV}
 power:stop_HV: {device: power, command: stop_HV}
-power:read_70V_current: {device: power, command: read_70V_current}
-power:read_70V_voltage: {device: power, command: read_70V_voltage}
+power:read_supply_current: {device: power, command: read_supply_current}
+power:read_supply_voltage: {device: power, command: read_supply_voltage}
 power:read_HV_current: {device: power, command: read_HV_current}
 power:read_HV_voltage: {device: power, command: read_HV_voltage}
 server:print_message:

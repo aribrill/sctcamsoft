@@ -20,25 +20,25 @@ class PowerController(DeviceController):
 
     def _list_snmp_commands(self, cmd):
         cmd_to_snmp = {
-                'start_main_switch': [
+                'turn_on_main_switch': [
                     self._snmp_cmd('snmpset', 'sysMainSwitch.0 i 1'),
                     'sleep 2'],
-                'stop_main_switch': [
+                'turn_off_main_switch': [
                     self._snmp_cmd('snmpset', 'sysMainSwitch.0 i 0'),
                     'sleep 2'],
-                'start_70V': [
+                'start_supply': [
                     self._snmp_cmd('snmpset', 'outputVoltage.u0 Float: 70.0'),
                     self._snmp_cmd('snmpset', 'outputSwitch.u0 i 1')],
-                'stop_70V': [
+                'stop_supply': [
                     self._snmp_cmd('snmpset', 'outputSwitch.u0 i 0')],
                 'start_HV': [
                     # TODO: How is the HV voltage actually set?
                     self._snmp_cmd('snmpset', 'outputSwitch.u4 i 1')],
                 'stop_HV': [
                     self._snmp_cmd('snmpset', 'outputSwitch.u4 i 0')],
-                'read_70V_current': [
+                'read_supply_current': [
                     self._snmp_cmd('snmpwalk', 'outputMeasurementCurrent.u0')],
-                'read_70V_voltage': [
+                'read_supply_voltage': [
                     self._snmp_cmd('snmpwalk',
                         'outputMeasurementSenseVoltage.u0')],
                 'read_HV_current': [
@@ -55,12 +55,12 @@ class PowerController(DeviceController):
         if not self.is_ready():
             print("Warning: skipping command, power control is not ready")
             return None
-        if cmd in ['start_main_switch', 'stop_main_switch', 'start_70V',
-            'stop_70V', 'start_HV', 'stop_HV']:
+        if cmd in ['turn_on_main_switch', 'turn_off_main_switch',
+                'start_supply', 'stop_supply', 'start_HV', 'stop_HV']:
             for snmp_command in snmp_commands:
                 subprocess.run(snmp_command)
             return None
-        elif cmd in ['read_70V_current', 'read_70V_voltage',
+        elif cmd in ['read_supply_current', 'read_supply_voltage',
                 'read_HV_current', 'read_HV_voltage']:
             snmp_command = snmp_commands[0]
             completed_process = subprocess.run(snmp_command,
