@@ -32,7 +32,6 @@ class PowerController(DeviceController):
                 'stop_supply': [
                     self._snmp_cmd('snmpset', 'outputSwitch.u0 i 0')],
                 'start_HV': [
-                    # TODO: confirm that 70V is the correct HV voltage
                     self._snmp_cmd('snmpset', 'outputVoltage.u4 Float: 70.0'),
                     self._snmp_cmd('snmpset', 'outputSwitch.u4 i 1')],
                 'stop_HV': [
@@ -57,6 +56,14 @@ class PowerController(DeviceController):
     def execute_command(self, command):
         cmd = command.command
         snmp_commands = self._list_snmp_commands(cmd)
+        update_commands = {
+                'read_supply_current': 'supply_current',
+                'read_supply_nominal_voltage': 'supply_nominal_voltage',
+                'read_supply_measured_voltage': 'supply_measured_voltage',
+                'read_HV_current': 'HV_current',
+                'read_HV_nominal_voltage': 'HV_nominal_voltage',
+                'read_HV_measured_voltage': 'HV_measured_voltage'
+                }
         if not self.is_ready():
             print("Warning: skipping command, power control is not ready")
             return None
@@ -65,17 +72,15 @@ class PowerController(DeviceController):
             for snmp_command in snmp_commands:
                 subprocess.run(snmp_command)
             return None
-        elif cmd in ['read_supply_current', 'read_supply_nominal_voltage',
-                'read_supply_measured_voltage', 'read_HV_current',
-                'read_HV_nominal_voltage', 'read_HV_measured_voltage']:
+        elif cmd in update_commands:
             snmp_command = snmp_commands[0]
-            completed_process = subprocess.run(snmp_command,
-                    check=True, encoding='ascii', stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+            completed_process = subprocess.run(snmp_command, check=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    encoding='ascii')
             # Parse output string to get numerical reading
             # Units are V and A
             update = float(completed_process.stdout.split()[-2])
-	    # TODO: make these the actual value names
-            return {'power_value': update}
+            return {'power_value': update_commands[cmd]}
         else:
             raise ValueError("command {} not recognized".format(cmd))
 
