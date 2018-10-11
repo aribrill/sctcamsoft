@@ -18,29 +18,32 @@ class FanController(DeviceController):
 
     def __init__(self, config):
         protocol = config.get('protocol', 'telnet')
-        if protocol == 'serial':
-            self.ser = serial.Serial(port='/dev/ttyACM0',
-                    baudrate=115200,
-                    bytesize=8,
-                    parity='N',
-                    stopbits=1)
-        elif protocol == 'telnet':
-            host = config['telnet_host']
-            port = config['telnet_port']
-            timeout = config.get('telnet_timeout', None)
-            try:
+        self._is_ready = False
+        try:
+            if protocol == 'serial':
+                self.ser = serial.Serial(port='/dev/ttyACM0',
+                        baudrate=115200,
+                        bytesize=8,
+                        parity='N',
+                        stopbits=1)
+            elif protocol == 'telnet':
+                host = config['telnet_host']
+                port = config['telnet_port']
+                timeout = config.get('telnet_timeout', None)
                 if timeout is None:
                     self.ser = telnetlib.Telnet(host, port)
                 else:
                     self.ser = telnetlib.Telnet(host, port, timeout)
-            except socket.timeout as e:
-                print("WARNING: Could not connect to fan")
-            except ConnectionRefusedError as e:
-                print("WARNING: Connection refused")
-            except OSError as e:
-                print("WARNING: Camera fan power supply unavailable")
-        else:
-            raise ValueError("ERROR: Unknown protocol '{}'".format(protocol))
+            else:
+                raise ValueError("ERROR: Unknown protocol '{}'".format(
+                    protocol))
+            self._is_ready = True
+        except socket.timeout as e:
+            print("WARNING: Could not connect to fan")
+        except ConnectionRefusedError as e:
+            print("WARNING: Connection refused")
+        except OSError as e:
+            print("WARNING: Camera fan power supply unavailable")
 
     def _send_cmd(self, cmd):
         try:
@@ -52,6 +55,7 @@ class FanController(DeviceController):
             # No connection opened
             print("Warning: No connection to fan")
             val = None
+            self._is_ready = False
         return val
 
     def _close(self):
@@ -75,6 +79,9 @@ class FanController(DeviceController):
     def execute_command(self, command):
         cmd = command.command
         update = None
+        if not self.is_ready():
+            print("Warning: skipping command, fan is not ready")
+            return update
         if cmd == "turn_on":
             self._turn_on()
         elif cmd == "turn_off":
@@ -90,3 +97,6 @@ class FanController(DeviceController):
         else:
             raise ValueError("command {} not recognized".format(cmd))
         return update
+
+    def is_ready(self):
+        return self._is_ready

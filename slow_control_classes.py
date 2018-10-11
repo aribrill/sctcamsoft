@@ -20,3 +20,9 @@ class DeviceController(ABC):
     @abstractmethod
     def execute_command(self, command):
         raise NotImplementedError()
+
+    # Return True if device is initialized and able to communicate, and
+    # False otherwise.
+    @abstractmethod
+    def is_ready(self):
+        raise NotImplementedError()
