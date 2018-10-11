@@ -16,16 +16,16 @@ class PowerController(DeviceController):
     def _snmp_cmd(self, snmpcmd, parameters):
         snmp_command = (snmpcmd + ' -v 2c -m ' + self.MIB_list_path +
                 ' -c guru ' + self.ip + ' ' + parameters)
-        return snmp_command
+        return snmp_command.split()
 
     def _list_snmp_commands(self, cmd):
         cmd_to_snmp = {
                 'turn_on_main_switch': [
                     self._snmp_cmd('snmpset', 'sysMainSwitch.0 i 1'),
-                    'sleep 2'],
+                    ['sleep', '2']],
                 'turn_off_main_switch': [
                     self._snmp_cmd('snmpset', 'sysMainSwitch.0 i 0'),
-                    'sleep 2'],
+                    ['sleep',  '2']],
                 'start_supply': [
                     self._snmp_cmd('snmpset', 'outputVoltage.u0 Float: 70.0'),
                     self._snmp_cmd('snmpset', 'outputSwitch.u0 i 1')],
@@ -70,11 +70,12 @@ class PowerController(DeviceController):
                 'read_HV_nominal_voltage', 'read_HV_measured_voltage']:
             snmp_command = snmp_commands[0]
             completed_process = subprocess.run(snmp_command,
-                    capture_output=True, text=True)
+                    check=True, encoding='ascii', stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
             # Parse output string to get numerical reading
             # Units are V and A
             update = float(completed_process.stdout.split()[-2])
-            return update
+	    # TODO: make these the actual value names
+            return {'power_value': update}
         else:
             raise ValueError("command {} not recognized".format(cmd))
 

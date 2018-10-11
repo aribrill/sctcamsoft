@@ -30,13 +30,13 @@ class FanController(DeviceController):
                     "reopening.")
             return 
         try:
-            if self._protocol == 'serial':
+            if protocol == 'serial':
                 self._ser = serial.Serial(port='/dev/ttyACM0',
                         baudrate=115200,
                         bytesize=8,
                         parity='N',
                         stopbits=1)
-            elif self._protocol == 'telnet':
+            elif protocol == 'telnet':
                 host = self.config['telnet_host']
                 port = self.config['telnet_port']
                 timeout = self.config.get('telnet_timeout', None)
@@ -45,8 +45,7 @@ class FanController(DeviceController):
                 else:
                     self._ser = telnetlib.Telnet(host, port, timeout)
             else:
-                raise ValueError("ERROR: Unknown protocol '{}'".format(
-                    self._protocol))
+                raise ValueError("ERROR: Unknown protocol '{}'".format(protocol))
         except socket.timeout as e:
             print("WARNING: Could not connect to fan")
         except ConnectionRefusedError as e:
