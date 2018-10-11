@@ -17,13 +17,14 @@ from slow_control_classes import Command, DeviceController
 class FanController(DeviceController):
 
     def __init__(self, config):
-        self._protocol = config.get('protocol', 'telnet')
+        self.config = config
         self._ser = None
         self._open_connection()
         if not self.is_ready():
             print("Warning: fan control not set up")
 
     def _open_connection(self):
+        protocol = self.config.get('protocol', 'telnet')
         if self._ser is not None:
             print("Warning: connection to fan is already open, close before "
                     "reopening.")
@@ -36,9 +37,9 @@ class FanController(DeviceController):
                         parity='N',
                         stopbits=1)
             elif self._protocol == 'telnet':
-                host = config['telnet_host']
-                port = config['telnet_port']
-                timeout = config.get('telnet_timeout', None)
+                host = self.config['telnet_host']
+                port = self.config['telnet_port']
+                timeout = self.config.get('telnet_timeout', None)
                 if timeout is None:
                     self._ser = telnetlib.Telnet(host, port)
                 else:
