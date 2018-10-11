@@ -32,18 +32,23 @@ class PowerController(DeviceController):
                 'stop_supply': [
                     self._snmp_cmd('snmpset', 'outputSwitch.u0 i 0')],
                 'start_HV': [
-                    # TODO: How is the HV voltage actually set?
+                    # TODO: confirm that 70V is the correct HV voltage
+                    self._snmp_cmd('snmpset', 'outputVoltage.u4 Float: 70.0'),
                     self._snmp_cmd('snmpset', 'outputSwitch.u4 i 1')],
                 'stop_HV': [
                     self._snmp_cmd('snmpset', 'outputSwitch.u4 i 0')],
                 'read_supply_current': [
                     self._snmp_cmd('snmpwalk', 'outputMeasurementCurrent.u0')],
-                'read_supply_voltage': [
+                'read_supply_nominal_voltage': [
+                    self._snmp_cmd('snmpwalk', 'outputVoltage.u0')],
+                'read_supply_measured_voltage': [
                     self._snmp_cmd('snmpwalk',
                         'outputMeasurementSenseVoltage.u0')],
                 'read_HV_current': [
                     self._snmp_cmd('snmpwalk', 'outputMeasurementCurrent.u4')],
-                'read_HV_voltage': [
+                'read_HV_nominal_voltage': [
+                    self._snmp_cmd('snmpwalk', 'outputVoltage.u4')],
+                'read_HV_measured_voltage': [
                     self._snmp_cmd('snmpwalk',
                         'outputMeasurementSenseVoltage.u4')]
                 }
@@ -60,8 +65,9 @@ class PowerController(DeviceController):
             for snmp_command in snmp_commands:
                 subprocess.run(snmp_command)
             return None
-        elif cmd in ['read_supply_current', 'read_supply_voltage',
-                'read_HV_current', 'read_HV_voltage']:
+        elif cmd in ['read_supply_current', 'read_supply_nominal_voltage',
+                'read_supply_measured_voltage', 'read_HV_current',
+                'read_HV_nominal_voltage', 'read_HV_measured_voltage']:
             snmp_command = snmp_commands[0]
             completed_process = subprocess.run(snmp_command,
                     capture_output=True, text=True)

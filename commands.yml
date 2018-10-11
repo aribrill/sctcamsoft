@@ -11,9 +11,19 @@ power:stop_supply: {device: power, command: stop_supply}
 power:start_HV: {device: power, command: start_HV}
 power:stop_HV: {device: power, command: stop_HV}
 power:read_supply_current: {device: power, command: read_supply_current}
-power:read_supply_voltage: {device: power, command: read_supply_voltage}
+power:read_supply_measured_voltage:
+    device: power
+    command: read_supply_measured_voltage
+power:read_supply_nominal_voltage:
+    device: power
+    command: read_supply_nominal_voltage
 power:read_HV_current: {device: power, command: read_HV_current}
-power:read_HV_voltage: {device: power, command: read_HV_voltage}
+power:read_HV_measured_voltage:
+    device: power
+    command: read_HV_measured_voltage
+power:read_HV_nominal_voltage:
+    device: power
+    command: read_HV_nominal_voltage
 server:print_message:
     device: server
     command: print_message
