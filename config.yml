@@ -1,83 +1,17 @@
 # Configuration file for SCT Camera slow control
 
 User Interface:
-    host: null
-    input_port: null
-    output_port: null
+    host: thinkpad
+    input_port: 12345
+    output_port: 12346
 
 fan:
     protocol: telnet
-    telnet_host: null
-    telnet_port: null
+    telnet_host: thinkpad
+    telnet_port: 12347
     telnet_timeout: 5
 
-High Level Commands:
+power:
+    ip: ''
+    MIB_list_path: '' 
 
-    monitor_fan:
-        args: []
-        device_commands:
-            -
-                device: server
-                command: set_alert
-                args: [device, variable, lower_limit, upper_limit]
-                values: 
-                    device: fan
-                    variable: voltage
-                    lower_limit: 23 #V
-                    upper_limit: 25 #V
-            -
-                device: server
-                command: set_alert
-                args: [device, variable, lower_limit, upper_limit]
-                values: 
-                    device: fan
-                    variable: current
-                    lower_limit: 14 #A
-                    upper_limit: 16 #A
-            -
-                device: server
-                command: repeat_high_level_command
-                args: [high_level_command, interval]
-                values: {high_level_command: read_fan_voltage, interval: 30}
-            -
-                device: server
-                command: repeat_high_level_command
-                args: [high_level_command, interval]
-                values: {high_level_command: read_fan_current, interval: 30}
-
-    read_fan_current:
-        args: []
-        device_commands:
-            -
-                device: fan
-                command: read_current
-    
-    read_fan_voltage:
-        args: []
-        device_commands:
-            -
-                device: fan
-                command: read_voltage
-
-    set_alert:
-        args: [device, variable, lower_limit, upper_limit]
-        device_commands:
-            -
-                device: server
-                command: set_alert
-                args: [device, variable, lower_limit, upper_limit]
-
-    setup_fan:
-        args: []
-        device_commands:
-            -
-                device: fan
-                command: turn_on
-            -
-                device: server
-                command: sleep
-                args: [secs]
-                values: {secs: 3}
-            -
-                device: fan
-                command: read_current

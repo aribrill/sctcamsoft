@@ -1,0 +1,135 @@
+monitor_fan:
+    args: []
+    device_commands:
+        -
+            device: server
+            command: set_alert
+            args: [device, variable, lower_limit, upper_limit]
+            values: 
+                device: fan
+                variable: voltage
+                lower_limit: 23 #V
+                upper_limit: 25 #V
+        -
+            device: server
+            command: set_alert
+            args: [device, variable, lower_limit, upper_limit]
+            values: 
+                device: fan
+                variable: current
+                lower_limit: 14 #A
+                upper_limit: 16 #A
+        -
+            device: server
+            command: repeat_high_level_command
+            args: [high_level_command, interval]
+            values: {high_level_command: read_fan_voltage, interval: 30}
+        -
+            device: server
+            command: repeat_high_level_command
+            args: [high_level_command, interval]
+            values: {high_level_command: read_fan_current, interval: 30}
+
+read_fan_current:
+    args: []
+    device_commands:
+        -
+            device: fan
+            command: read_current
+
+read_fan_voltage:
+    args: []
+    device_commands:
+        -
+            device: fan
+            command: read_voltage
+
+set_alert:
+    args: [device, variable, lower_limit, upper_limit]
+    device_commands:
+        -
+            device: server
+            command: set_alert
+            args: [device, variable, lower_limit, upper_limit]
+
+start_fans:
+    args: []
+    device_commands:
+        -
+            device: fan
+            command: turn_on
+        -
+            device: server
+            command: sleep
+            args: [secs]
+            values: {secs: 3}
+        -
+            device: fan
+            command: read_current
+        -
+            device: fan
+            command: read_voltage
+
+stop_fans:
+    args: []
+    device_commands:
+        -
+            device: fan
+            device: turn_off
+        -
+            device: server
+            command: sleep
+            args: [secs]
+            values: {secs: 3}
+        -
+            device: fan
+            command: read_current
+        -
+            device: fan
+            command: read_voltage
+
+power_on:
+    args: []
+    device_commands:
+        -
+            device: power
+            command: start_main_switch
+        -
+            device: power
+            command: start_70V
+        -
+            device: power
+            command: read_70V_voltage
+        -
+            device: power
+            command: read_70V_current
+
+power_off:
+    args: []
+    device_commands:
+        -
+            device: power
+            command: stop_70V
+        -
+            device: power
+            command: stop_main_switch
+        -
+            device: power
+            command: read_70V_voltage
+        -
+            device: power
+            command: read_70V_current
+
+test_server:
+    args: []
+    device_commands:
+        -
+            device: server
+            command: print_message
+            args: [message, msg_num]
+            values: {message: "Testing the slow control server.", msg_num: 1}
+        -
+            device: server
+            command: print_message
+            args: [message, msg_num]
+            values: {message: "It's working!", msg_num: 2}

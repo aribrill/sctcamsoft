@@ -13,6 +13,7 @@ import slow_control_pb2 as sc
 # Load configuration
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Path to slow control config file')
+parser.add_argument('commands_file', help='Path to slow control commands file')
 args = parser.parse_args()
 
 with open(args.config_file, 'r') as config_file:
@@ -24,7 +25,8 @@ server_port = config['User Interface']['input_port']
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((server_host, server_port))
 
-commands = config['High Level Commands']
+with open(args.commands_file, 'r') as commands_file:
+    commands = yaml.load(commands_file)
 
 # Return a serialized message containing the UserCommand corresponding
 # to the input entered by the user. If the command isn't valid, return None.

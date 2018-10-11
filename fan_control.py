@@ -28,25 +28,30 @@ class FanController(DeviceController):
             host = config['telnet_host']
             port = config['telnet_port']
             timeout = config.get('telnet_timeout', None)
-            if timeout is None:
-                self.ser = telnetlib.Telnet(host, port)
-            else:
-                try:
+            try:
+                if timeout is None:
+                    self.ser = telnetlib.Telnet(host, port)
+                else:
                     self.ser = telnetlib.Telnet(host, port, timeout)
-                except socket.timeout as e:
-                    print("WARNING: Could not connect to fan")
-                except ConnectionRefusedError as e:
-                    print("WARNING: Connection refused")
-                except OSError as e:
-                    print("WARNING: Camera fan power supply unavailable")
+            except socket.timeout as e:
+                print("WARNING: Could not connect to fan")
+            except ConnectionRefusedError as e:
+                print("WARNING: Connection refused")
+            except OSError as e:
+                print("WARNING: Camera fan power supply unavailable")
         else:
             raise ValueError("ERROR: Unknown protocol '{}'".format(protocol))
 
     def _send_cmd(self, cmd):
-        self.ser.write("{}\n".format(cmd).encode('ascii'))
-        time.sleep(0.5)
-        val = self.ser.read_until('\n'.encode(), timeout=1)
-        val = val.decode()[:6] # strip non-numerical output
+        try:
+            self.ser.write("{}\n".format(cmd).encode('ascii'))
+            time.sleep(0.5)
+            val = self.ser.read_until('\n'.encode('ascii'), timeout=1)
+            val = val.decode('ascii')[:6] # strip non-numerical output
+        except AttributeError as e:
+            # No connection opened
+            print("Warning: No connection to fan")
+            val = None
         return val
 
     def _close(self):
@@ -58,16 +63,13 @@ class FanController(DeviceController):
 
     def _turn_off(self):
         self._send_cmd("PWR OFF")
-        self._close()
     
     def _read_voltage(self):
         val = self._send_cmd("VREAD")
-        time.sleep(1)
         return val
 
     def _read_current(self):
         val = self._send_cmd("IREAD")
-        time.sleep(1)
         return val
 
     def execute_command(self, command):
@@ -83,6 +85,8 @@ class FanController(DeviceController):
         elif cmd == "read_current":
             current = self._read_current()
             update = {'current': current}
+        elif cmd == "close":
+            self._close()
         else:
             raise ValueError("command {} not recognized".format(cmd))
         return update

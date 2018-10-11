@@ -11,6 +11,7 @@ import yaml
 
 from slow_control_classes import HighLevelCommand, Command
 from fan_control import FanController
+from power_control import PowerController
 import slow_control_pb2 as sc
 
 Alert = namedtuple('Alert', ['device', 'variable', 'lower_limit', 'upper_limit'])
@@ -75,14 +76,14 @@ class UserHandler():
         
 class SlowControlServer():
    
-    def __init__(self, config, devices):
+    def __init__(self, config, high_level_commands, devices):
         print("Slow Control Server")
         print("Initializing server...")
         self.alerts = []
         self.timers = []
         self.user_handler = UserHandler(config['User Interface'])
         self.update = {}
-        self.high_level_commands = config['High Level Commands']
+        self.high_level_commands = high_level_commands
         print("Initializing devices:")
         self.device_controllers = {'server': self}
         for device, controller in devices.items():
@@ -198,12 +199,19 @@ class SlowControlServer():
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Path to slow control config file')
+parser.add_argument('commands_file', help='Path to slow control commands file')
 args = parser.parse_args()
 
 with open(args.config_file, 'r') as config_file:
     config = yaml.load(config_file)
 
-devices = {'fan': FanController}
-server = SlowControlServer(config, devices)
+with open(args.commands_file, 'r') as commands_file:
+    high_level_commands = yaml.load(commands_file)
+
+devices = {
+        'fan': FanController,
+        'power': PowerController
+        }
+server = SlowControlServer(config, high_level_commands, devices)
 
 server.run_server()
