@@ -37,6 +37,9 @@ def parse_and_serialize_user_input(user_input):
     if command not in commands:
         raise ValueError("command '{}' not recognized".format(command))
     args = commands[command].get('args', [])
+    # For this special command, append the args for the command to repeat too
+    if command == 'server:set_repeating_command':
+        args.extend(commands[user_input[2]]['args'])
     values = user_input[1:]
     if len(args) != len(values):
         raise IndexError("command '{}' requires {} arguments, {} given".format(

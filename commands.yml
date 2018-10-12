@@ -40,7 +40,8 @@ server:set_alert:
 server:set_repeating_command:
     device: server
     command: set_repeating_command
-    args: [command]
+    # Command args are appended to the args
+    args: [interval, command]
 
 # High level commands (composed of multiple low level commands)
 
@@ -157,3 +158,11 @@ test_server:
             command: print_message
             args: [message]
             values: {message: "It's working!"}
+        -
+            device: server
+            command: set_repeating_command
+            args: [interval, command]
+            values:
+                interval: 2
+                command: 'server:print_message'
+                message: 'Hello, world!'

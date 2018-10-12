@@ -51,7 +51,7 @@ class UserHandler():
             user_command = sc.UserCommand()
             user_command.ParseFromString(serialized_message)
             self.user_command = HighLevelCommand(user_command.command,
-                    user_command.args)
+                    dict(user_command.args))
         else:
             self.selector.unregister(conn)
             conn.close()
@@ -91,41 +91,48 @@ class SlowControlServer():
         for device, controller in devices.items():
             print("Initializing {}...".format(device))
             self.device_controllers[device] = controller(config[device])
+        print("Initialization complete.")
 
     def _parse_high_level_command(self, high_level_command):
         
         # Set up a device command, combining arguments from user input
         # and from prespecified values
         def set_up_command(cmd_def, user_input):
-            args = cmd_def.get('args', [])
+            device = cmd_def['device']
+            command = cmd_def['command']
+            arg_names = cmd_def.get('args', [])
             values = cmd_def.get('values', {})
-            cmd_args = {}
-            for arg in args:
-                if arg in user_input:
-                    cmd_args[arg] = user_input[arg]
-                elif arg in values:
-                    cmd_args[arg] = values[arg]
-                else:
-                    cmd_args[arg] = None
-                    print("Warning: no input or value for argument '{}'"
+            # User input may override prespecified values
+            cmd_args = {**values, **user_input}
+            # Special case: include the args for the repeated command too
+            if (command == 'set_repeating_command' and
+                    'command' in cmd_args):
+                arg_names.extend(self.high_level_commands[cmd_args['command']][
+                    'args'])
+            # Check for missing args
+            missing_args = list(set(arg_names) - set(cmd_args))
+            for arg in missing_args:
+                print("Warning: no input or value for argument '{}' "
                             "specified".format(arg))
-            device_command = Command(cmd_def['device'], cmd_def['command'],
-                    cmd_args)
+            # Check for extra args
+            extra_args = list(set(cmd_args) - set(arg_names))
+            for arg in extra_args:
+                print("Warning: extra argument '{}' specified".format(arg))
+            device_command = Command(device, command, cmd_args)
             return device_command
-        
-        user_input = high_level_command.args
-        # Get list of device commands with args assigned as specified
-        try:
-            device_command_defs = self.high_level_commands[
-                    high_level_command.command]['device_commands']
-        except KeyError as e:
-            # If no list of device commands, this is really a low level command
-            cmd_def = self.high_level_commands[high_level_command.command]
-            return [set_up_command(cmd_def, user_input)]
 
-        # This is a high level command
-        device_commands = [set_up_command(cmd_def, user_input) for cmd_def in
-                device_command_defs]
+        command = high_level_command.command
+        user_input = high_level_command.args
+        if 'device_commands' in self.high_level_commands[command]:
+            # This is a list of commands for different devices (high level)
+            device_command_defs = self.high_level_commands[command][
+                    'device_commands']
+            device_commands = [set_up_command(cmd_def, user_input) for 
+                    cmd_def in device_command_defs]
+        else:
+            # This is a single command (low level)
+            cmd_def = self.high_level_commands[command]
+            device_commands = [set_up_command(cmd_def, user_input)]
         return device_commands
     
     def _execute_command(self, command):
@@ -148,9 +155,11 @@ class SlowControlServer():
                     lower_limit=float(command.args['lower_limit']),
                     upper_limit=float(command.args['upper_limit'])))
             elif cmd == 'set_repeating_command':
+                repeat_args = {a: command.args[a] for a in command.args
+                        if a not in ['command', 'interval']}
                 repeat_cmd = HighLevelCommand(
                         command=command.args['command'],
-                        args={})
+                        args=repeat_args)
                 timer_index = len(self.timers)
                 timer = {'passed': True, 'command': repeat_cmd}
                 self.timers.append(timer)
