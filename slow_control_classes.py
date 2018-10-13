@@ -10,11 +10,11 @@ DeviceCommand = namedtuple('DeviceCommand', ['device', 'command', 'args'])
 class DeviceController(ABC):
 
     @abstractmethod
-    def __init__(self, config):
+    def __init__(self, config, *args):
         raise NotImplementedError()
 
-    # Execute the specified command (of type Command), returning either a
-    # dict containing update values or None.
+    # Execute the specified command (of type DeviceCommand), returning either
+    # a dict containing update values or None.
     @abstractmethod
     def execute_command(self, command):
         raise NotImplementedError()

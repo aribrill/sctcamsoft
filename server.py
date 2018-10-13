@@ -9,7 +9,7 @@ import time
 
 import yaml
 
-from slow_control_classes import DeviceCommand
+from slow_control_classes import DeviceCommand, DeviceController
 from fan_control import FanController
 from power_control import PowerController
 import slow_control_pb2 as sc
@@ -76,7 +76,7 @@ class UserHandler():
             callback(key.fileobj, mask)
         return self.user_command
         
-class SlowControlServer():
+class ServerController(DeviceController):
    
     def __init__(self, config, user_commands, devices):
         print("Slow Control Server")
@@ -87,7 +87,7 @@ class SlowControlServer():
         self.update = {}
         self.user_commands = user_commands
         # For uniquely labeling messages; reset in each update
-        self.message_count = 0
+        self._message_count = 0
         print("Initializing devices:")
         self.device_controllers = {'server': self}
         for device, controller in devices.items():
@@ -144,50 +144,41 @@ class SlowControlServer():
             print("Warning: command definition incorrectly specified! "
                     "Skipping command.")
             return []
-    
-    def _execute_device_command(self, device_command):
-        command = device_command.command
-        device_controller = self.device_controllers[device_command.device]
-        device_update = None
-        try:
-            # Execute a device command
-            if device_controller is not self:
-                device_update = device_controller.execute_command(
-                        device_command)
-            # Execute a server command
-            elif command == 'print_message':
-                device_update = {'message'+str(self.message_count): device_command.args['message']}
-                self.message_count += 1
-            elif command == 'sleep':
-                time.sleep(float(device_command.args['secs']))
-            elif command == 'set_alert':
-                self.alerts.append(Alert(device=device_command.args['device'],
-                    variable=device_command.args['variable'],
-                    lower_limit=float(device_command.args['lower_limit']),
-                    upper_limit=float(device_command.args['upper_limit'])))
-            elif command == 'set_repeating_command':
-                repeat_args = {a: device_command.args[a] for a in 
-                        device_command.args if a not in ['command', 'interval']}
-                repeat_cmd = HighLevelCommand(
-                        command=device_command.args['command'],
-                        args=repeat_args)
-                timer_index = len(self.timers)
-                timer = {'passed': True, 'command': repeat_cmd}
-                self.timers.append(timer)
-                def start_timer():
-                    self.timers[timer_index]['passed'] = True
-                    threading.Timer(float(device_command.args['interval']),
-                            start_timer).start()
-                start_timer()
-            elif command == '_process_timed_commands':
-                for timer in self.timers:
-                    if timer['passed']:
-                        timer['passed'] = False
-                        self._process_user_command(timer['command'])
-        except Exception as e:
-            raise
-            
-        return {device_command.device: device_update} if device_update else None
+   
+    def execute_command(self, command):
+        cmd = command.command
+        update = None
+        if cmd == 'print_message':
+            update = {'message' + str(self._message_count): 
+                    command.args['message']}
+            self._message_count += 1
+        elif cmd == 'sleep':
+            time.sleep(float(command.args['secs']))
+        elif cmd == 'set_alert':
+            self.alerts.append(Alert(device=command.args['device'],
+                variable=command.args['variable'],
+                lower_limit=float(command.args['lower_limit']),
+                upper_limit=float(command.args['upper_limit'])))
+        elif cmd == 'set_repeating_command':
+            repeat_args = {a: command.args[a] for a in command.args 
+                    if a not in ['command', 'interval']}
+            repeat_cmd = UserCommand(command=command.args['command'],
+                    args=repeat_args)
+            timer_index = len(self.timers)
+            timer = {'passed': True, 'command': repeat_cmd}
+            self.timers.append(timer)
+            def start_timer():
+                self.timers[timer_index]['passed'] = True
+                threading.Timer(float(command.args['interval']),
+                        start_timer).start()
+            start_timer()
+        elif cmd == '_process_timed_commands':
+            for timer in self.timers:
+                if timer['passed']:
+                    timer['passed'] = False
+                    self._process_user_command(timer['command'])
+        
+        return {'server': update} if update else None
 
     def _process_update(self, update):
         if update is not None:
@@ -200,7 +191,12 @@ class SlowControlServer():
     def _process_user_command(self, user_command):
         device_commands = self._parse_user_command(user_command)
         for device_command in device_commands:
-            update = self._execute_device_command(device_command)
+            device_controller = self.device_controllers[device_command.device]
+            try:
+                update = device_controller.execute_command(device_command)
+            # TODO: Handle exceptions gracefully
+            except Exception as e:
+                raise
             self._process_update(update)
 
     def _check_alerts(self):
@@ -224,17 +220,20 @@ class SlowControlServer():
                         'upper_limit': alert.upper_limit
                         }
 
+    def is_ready(self):
+        return True
+
     def run_server(self):
         # Start server main loop
         while True:
             # Process any commands on an automatic timer
-            self._execute_device_command(DeviceCommand(device='server',
+            self.execute_command(DeviceCommand(device='server',
                 command='_process_timed_commands', args={}))
             # Check alerts and add any found to update
             self._check_alerts()
             # Send any updates to the user, and receive any commands
             user_command = self.user_handler.communicate_user(self.update)
-            self.message_count = 0
+            self._message_count = 0
             self.update = {}
             if user_command is not None:
                 self._process_user_command(user_command)
@@ -254,6 +253,6 @@ devices = {
         'fan': FanController,
         'power': PowerController
         }
-server = SlowControlServer(config, user_commands, devices)
+server = ServerController(config, user_commands, devices)
 
 server.run_server()
