@@ -12,7 +12,7 @@ import time
 
 import serial
 
-from slow_control_classes import Command, DeviceController
+from slow_control_classes import DeviceCommand, DeviceController
 
 class FanController(DeviceController):
 

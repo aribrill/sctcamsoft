@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from slow_control_classes import Command, DeviceController
+from slow_control_classes import DeviceCommand, DeviceController
 
 class PowerController(DeviceController):
 

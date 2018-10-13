@@ -33,6 +33,6 @@ while True:
         user_update = sc.UserUpdate()
         user_update.ParseFromString(serialized_message)
         for device in user_update.devices:
-            for key in user_update.devices[device].updates:
+            for key in sorted(user_update.devices[device].updates):
                 value = user_update.devices[device].updates[key]
                 print("{}: {}: {}".format(device, key, value))

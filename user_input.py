@@ -31,35 +31,42 @@ with open(args.commands_file, 'r') as commands_file:
 
 # Return a serialized message containing the UserCommand corresponding
 # to the input entered by the user. If the command isn't valid, return None.
-def parse_and_serialize_user_input(user_input):
-    user_input = shlex.split(user_input.strip())
-    command = user_input[0]
+def parse_and_serialize_user_input(raw_user_input):
+    raw_user_input = shlex.split(raw_user_input.strip())
+    command = raw_user_input[0]
+    user_input = raw_user_input[1:]
     if command not in commands:
         raise ValueError("command '{}' not recognized".format(command))
-    args = commands[command].get('args', [])
-    # For this special command, append the args for the command to repeat too
-    if command == 'server:set_repeating_command':
-        args.extend(commands[user_input[2]]['args'])
-    values = user_input[1:]
-    if len(args) != len(values):
+    args = commands[command].get('args', {})
+    # Handle special case for setting a repeating command
+    if '__command_args' in args:
+        args.pop('__command_args')
+        args.update(commands[args['command']].get('args', {}))
+    unspecified_args = [a for a in args if args[a] is None 
+            or isinstance(a, dict) and args[a].get('value') is None]
+    if len(user_input) == len(args):
+        user_args = args
+    elif len(user_input) == len(unspecified_args):
+        user_args = unspecified_args
+    else:
         raise IndexError("command '{}' requires {} arguments, {} given".format(
-            command, len(args), len(values)))
+            command, len(args), len(user_input)))
     message = sc.UserCommand()
     message.command = command
-    for arg, value in zip(args, values):
-        message.args[arg] = value
+    for user_arg, input_value in zip(user_args, user_input):
+        message.args[user_arg] = input_value
     return message.SerializeToString()
 
 # Start a terminal for user input
 print("SCT Slow Control - Input")
 # Identify self to server
 while True:
-    user_input = input('> ')
-    if user_input in ['exit', 'q']:
+    raw_user_input = input('> ')
+    if raw_user_input in ['exit', 'q']:
         sock.close()
         break
     try:
-        serialized_command = parse_and_serialize_user_input(user_input)
+        serialized_command = parse_and_serialize_user_input(raw_user_input)
         sock.sendall(serialized_command)
     except (ValueError, IndexError) as e:
         print(e)

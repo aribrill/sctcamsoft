@@ -3,11 +3,9 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
 
-HighLevelCommand = namedtuple('HighLevelCommand', ['command', 'args'])
-
 # args are values given by the user as input and are strings. The
 # DeviceController shall cast them to another type if needed.
-Command = namedtuple('Command', ['device', 'command', 'args'])
+DeviceCommand = namedtuple('DeviceCommand', ['device', 'command', 'args'])
 
 class DeviceController(ABC):
 

@@ -1,3 +1,29 @@
+# Command definitions
+# Low level command (one command for a single device):
+# 'command_name':
+#   device: 'device'
+#   command: 'command'
+#   args: # optional. default: {}
+#       - 'arg1': 'default_value'
+#       - 'arg2': null # no default value - arg must be specified by user
+#       ... # values for some, all, or none of args may be specified
+# 
+# High level command (list of commands which may be for different devices):
+# 'command_name':
+#   command_list:
+#       - 'command_name_1'
+#       - 'command_name_2'
+#       ...
+#   args: # optional. default: {}
+#       'arg1': {list_index: 0, arg: 'command1_arg1', value: null}
+#       'arg2': {list_index: 0, arg: 'command1_arg2', value: 'default_value'}
+#       'arg3': {list_index: 1, arg: 'command2_arg', value: 'default_value'}
+#       ... # vals for some, all, or none of args may be specified
+# 
+# User-provided argument values may override those specified with the value
+# parameter. The commands in a high level command command_list may themselves
+# be either low level or high level commands.
+
 # Low level commands
 fan:open_connection: {device: fan, command: open_connection}
 fan:close_connection: {device: fan, command: close_connection}
@@ -25,144 +51,119 @@ power:read_HV_measured_voltage:
 power:read_HV_nominal_voltage:
     device: power
     command: read_HV_nominal_voltage
-server:print_message:
+print:
     device: server
     command: print_message
-    args: [message]
+    args: {message: null}
 server:sleep:
     device: server
     command: sleep
-    args: [secs]
-server:set_alert:
+    args: {secs: null}
+set_alert:
     device: server
     command: set_alert
-    args: [device, variable, lower_limit, upper_limit]
-server:set_repeating_command:
+    args:
+        device: null
+        variable: null
+        lower_limit: null
+        upper_limit: null
+# TODO: fix implementation
+set_repeating_command:
     device: server
     command: set_repeating_command
-    # Command args are appended to the args
-    args: [interval, command]
+    args:
+        interval: null
+        command: null
+        # Automatically replaced by the args of the specified command
+        __command_args: null
 
 # High level commands (composed of multiple low level commands)
 
-monitor_fan:
-    args: []
-    device_commands:
-        -
-            device: server
-            command: set_alert
-            args: [device, variable, lower_limit, upper_limit]
-            values: 
-                device: fan
-                variable: voltage
-                lower_limit: 23 #V
-                upper_limit: 25 #V
-        -
-            device: server
-            command: set_alert
-            args: [device, variable, lower_limit, upper_limit]
-            values: 
-                device: fan
-                variable: current
-                lower_limit: 14 #A
-                upper_limit: 16 #A
-        -
-            device: server
-            command: set_repeating_command
-            args: [command, interval]
-            values: {command: 'fan:read_voltage', interval: 30}
-        -
-            device: server
-            command: set_repeating_command
-            args: [command, interval]
-            values: {command: 'fan:read_current', interval: 30}
+monitor_fans:
+    command_list:
+        - set_alert # fan voltage
+        - set_alert # fan current
+        - set_repeating_command # fan:read_voltage
+        - set_repeating_command # fan:read_current
+    args:
+        alert1_device: {list_index: 0, arg: device, value: fan}
+        alert1_variable: {list_index: 0, arg: variable, value: voltage}
+        alert1_lower_limit: {list_index: 0, arg: lower_limit, value: 23} # V
+        alert1_upper_limit: {list_index: 0, arg: upper_limit, value: 25} # V
+        alert2_device: {list_index: 1, arg: device, value: fan}
+        alert2_variable: {list_index: 1, arg: variable, value: current}
+        alert2_lower_limit: {list_index: 1, arg: lower_limit, value: 14} # A
+        alert2_upper_limit: {list_index: 1, arg: upper_limit, value: 16} # A
+        repeat1_command:
+            list_index: 2
+            arg: command
+            value: 'fan:read_voltage'
+        repeat1_interval: {list_index: 2, arg: interval, value: 30} # s
+        repeat2_command:
+            list_index: 3
+            arg: command
+            value: 'fan:read_current'
+        repeat2_interval: {list_index: 3, arg: interval, value: 30} # s
 
 start_fans:
-    args: []
-    device_commands:
-        -
-            device: fan
-            command: turn_on
-        -
-            device: server
-            command: sleep
-            args: [secs]
-            values: {secs: 3}
-        -
-            device: fan
-            command: read_current
-        -
-            device: fan
-            command: read_voltage
+    command_list:
+        - fan:turn_on
+        - server:sleep
+        - fan:read_current
+        - fan:read_voltage
+    args:
+        sleep_secs: {list_index: 1, arg: secs, value: 3}
 
 stop_fans:
-    args: []
-    device_commands:
-        -
-            device: fan
-            device: turn_off
-        -
-            device: server
-            command: sleep
-            args: [secs]
-            values: {secs: 3}
-        -
-            device: fan
-            command: read_current
-        -
-            device: fan
-            command: read_voltage
+    command_list:
+        - fan:turn_off
+        - server:sleep
+        - fan:read_current
+        - fan:read_voltage
+    args:
+        sleep_secs: {list_index: 1, arg: secs, value: 3}
 
-power_on:
-    args: []
-    device_commands:
-        -
-            device: power
-            command: start_main_switch
-        -
-            device: power
-            command: start_70V
-        -
-            device: power
-            command: read_70V_voltage
-        -
-            device: power
-            command: read_70V_current
+power_on_camera:
+    command_list:
+        - power:start_main_switch
+        - power:start_supply
+        - power:read_supply_nominal_voltage
+        - power:read_supply_measured_voltage
+        - power:read_supply_current
 
-power_off:
-    args: []
-    device_commands:
-        -
-            device: power
-            command: stop_70V
-        -
-            device: power
-            command: stop_main_switch
-        -
-            device: power
-            command: read_70V_voltage
-        -
-            device: power
-            command: read_70V_current
+power_off_camera:
+    command_list:
+        - power:stop_supply
+        - power:stop_main_switch
+        - power:read_supply_nominal_voltage
+        - power:read_supply_measured_voltage
+        - power:read_supply_current
 
 test_server:
-    args: []
-    device_commands:
-        -
-            device: server
-            command: print_message
-            args: [message]
-            values: {message: "Testing the slow control server."}
-        -
-            device: server
-            command: print_message
-            args: [message]
-            values: {message: "It's working!"}
-        -
-            device: server
-            command: set_repeating_command
-            args: [interval, command]
-            values:
-                interval: 2
-                command: 'server:print_message'
-                message: 'Hello, world!'
+    command_list:
+        - print
+        - print
+        - test_server2
+    args:
+        message1:
+            list_index: 0
+            arg: message
+            value: "Testing the slow control server."
+        message2:
+            list_index: 1
+            arg: message
+            value: "It's working!"
+
+test_server2:
+    command_list:
+        - print
+        - print
+    args:
+        message1:
+            list_index: 0
+            arg: message
+            value: "Here's another message"
+        message2:
+            list_index: 1
+            arg: message
+            value: "Yup, still working!"
