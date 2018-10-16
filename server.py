@@ -16,7 +16,7 @@ import slow_control_pb2 as sc
 
 Alert = namedtuple('Alert', ['device', 'variable', 'lower_limit',
     'upper_limit'])
-UserCommand = namedtuple('Command', ['command', 'args'])
+UserCommand = namedtuple('UserCommand', ['command', 'args'])
 
 class UserHandler():
 
@@ -29,6 +29,7 @@ class UserHandler():
 
         def add_socket(port, accept_fn):
             sock = socket.socket()
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind((self.host, port))
             sock.listen()
             sock.setblocking(False)
@@ -82,6 +83,7 @@ class ServerController(DeviceController):
         print("Slow Control Server")
         print("Initializing server...")
         self.alerts = []
+        self.mode = 'normal'
         self.timers = []
         self.user_handler = UserHandler(config['User Interface'])
         self.update = {}
@@ -95,7 +97,8 @@ class ServerController(DeviceController):
             self.device_controllers[device] = controller(config[device])
         print("Initialization complete.")
 
-    # Break down command into a list of device commands
+    # Break down user command into an unprocessed list of device commands
+    # Recursively process nested high-level commands
     def _parse_user_command(self, user_command):
         
         # Combine command arguments from user input and prespecified values
@@ -114,10 +117,6 @@ class ServerController(DeviceController):
 
         cmd_def = self.user_commands[user_command.command]
         args = cmd_def.get('args', {})
-        # Handle special case for setting a repeating command
-        if '__command_args' in args:
-            args.pop('__command_args')
-            args.update(commands[args['command']].get('args', {}))
         user_input = user_command.args
         # Base case: one command for a particular device ("low level")
         if 'device' in cmd_def and 'command' in cmd_def:
@@ -128,10 +127,10 @@ class ServerController(DeviceController):
         # Recursive case: list of commands ("high level")
         elif 'command_list' in cmd_def:
             device_commands = []
-            for list_index, command in enumerate(cmd_def['command_list']):
+            for index, command in enumerate(cmd_def['command_list']):
                 sub_arg_names = {a: args[a]['arg'] for a in args 
-                        if args[a]['list_index'] == list_index}
-                sub_args = {sub_arg_names[a]: args[a]['value'] for a in
+                        if args[a]['index'] == index}
+                sub_args = {sub_arg_names[a]: args[a]['val'] for a in
                         sub_arg_names}
                 sub_user_input = {sub_arg_names[a]: user_input[a] for a in
                         sub_arg_names if a in user_input}
@@ -145,6 +144,75 @@ class ServerController(DeviceController):
                     "Skipping command.")
             return []
    
+    def _execute_device_command_list(self, device_command_list):
+
+        repeat_depth = 0
+        repeat_cmds = []
+        RepeatParams = namedtuple('RepeatParams', ['interval', 'n_executions',
+            'execute_immediately'])
+        for dc in device_command_list:
+            # Begin mode to list commands to repeatedly execute later
+            if dc.device is None and dc.command == 'enter_repeat_mode':
+                if repeat_depth == 0: # This is the first nested repeat
+                    n_executions = dc.args['n_executions']
+                    if n_executions is not None:
+                        n_executions = int(n_executions)
+                    repeat_params = RepeatParams(
+                            interval=float(dc.args['interval']),
+                            n_executions=n_executions,
+                            execute_immediately=dc.args['execute_immediately'])
+                else:
+                    repeat_cmds.append(dc)
+                repeat_depth += 1
+            # Exit this mode unless the exit is in a nested repeat mode
+            elif dc.device is None and dc.command == 'exit_repeat_mode':
+                repeat_depth -= 1
+                # Set the commands for repeated execution
+                if repeat_depth == 0:
+                    timer = {'interval': repeat_params.interval,
+                            'n_executions': repeat_params.n_executions,
+                            'execute_immediately': repeat_params.execute_immediately,
+                            'command_list': repeat_cmds}
+                    if timer['execute_immediately']:
+                        timer['n_executions'] -= 1
+                        timer['passed'] = True
+                    else:
+                        timer['passed'] = False
+                    self.timers.append(timer)
+                    def timer_fn(timer):
+                        def start_timer():
+                            timer['passed'] = True
+                            n_executions = timer['n_executions']
+                            if n_executions is None or n_executions > 0:
+                                time.sleep(0.01)
+                                if n_executions is not None:
+                                    timer['n_executions'] -= 1
+                                threading.Timer(timer['interval'],
+                                        start_timer).start()
+                        return start_timer
+                    start_timer = timer_fn(timer)
+                    threading.Timer(timer['interval'], start_timer).start()
+                    repeat_cmds = []
+                else: repeat_cmds.append(dc)
+            # Add the command to the list for repeated execution
+            elif repeat_depth > 0:
+                repeat_cmds.append(dc)
+            # Execute the command
+            else:
+                try:
+                    device_controller = self.device_controllers[dc.device]
+                    device_update = device_controller.execute_command(dc)
+                # TODO: Handle exceptions gracefully
+                except Exception as e:
+                    raise
+                # Add device update to rest of the updates
+                if device_update is not None:
+                    for device, values in device_update.items():
+                        if device not in self.update:
+                            self.update[device] = {}
+                        for key, value in values.items():
+                            self.update[device][key] = value
+    
     def execute_command(self, command):
         cmd = command.command
         update = None
@@ -159,45 +227,10 @@ class ServerController(DeviceController):
                 variable=command.args['variable'],
                 lower_limit=float(command.args['lower_limit']),
                 upper_limit=float(command.args['upper_limit'])))
-        elif cmd == 'set_repeating_command':
-            repeat_args = {a: command.args[a] for a in command.args 
-                    if a not in ['command', 'interval']}
-            repeat_cmd = UserCommand(command=command.args['command'],
-                    args=repeat_args)
-            timer_index = len(self.timers)
-            timer = {'passed': True, 'command': repeat_cmd}
-            self.timers.append(timer)
-            def start_timer():
-                self.timers[timer_index]['passed'] = True
-                threading.Timer(float(command.args['interval']),
-                        start_timer).start()
-            start_timer()
-        elif cmd == '_process_timed_commands':
-            for timer in self.timers:
-                if timer['passed']:
-                    timer['passed'] = False
-                    self._process_user_command(timer['command'])
+        else:
+            raise ValueError("command {} not recognized".format(cmd))
         
         return {'server': update} if update else None
-
-    def _process_update(self, update):
-        if update is not None:
-            for device, values in update.items():
-                if device not in self.update:
-                    self.update[device] = {}
-                for key, value in values.items():
-                    self.update[device][key] = value
-    
-    def _process_user_command(self, user_command):
-        device_commands = self._parse_user_command(user_command)
-        for device_command in device_commands:
-            device_controller = self.device_controllers[device_command.device]
-            try:
-                update = device_controller.execute_command(device_command)
-            # TODO: Handle exceptions gracefully
-            except Exception as e:
-                raise
-            self._process_update(update)
 
     def _check_alerts(self):
         for i, alert in enumerate(self.alerts):
@@ -219,6 +252,14 @@ class ServerController(DeviceController):
                         'lower_limit': alert.lower_limit,
                         'upper_limit': alert.upper_limit
                         }
+    
+    def _execute_timed_commands(self):
+        for timer in self.timers:
+            if timer['n_executions'] is not None and timer['n_executions'] <= 0:
+                continue
+            if timer['passed']:
+                timer['passed'] = False
+                self._execute_device_command_list(timer['command_list'])
 
     def is_ready(self):
         return True
@@ -227,16 +268,18 @@ class ServerController(DeviceController):
         # Start server main loop
         while True:
             # Process any commands on an automatic timer
-            self.execute_command(DeviceCommand(device='server',
-                command='_process_timed_commands', args={}))
+            self._execute_timed_commands()
             # Check alerts and add any found to update
             self._check_alerts()
-            # Send any updates to the user, and receive any commands
+            # Send an update to the user and receive a command (if any)
             user_command = self.user_handler.communicate_user(self.update)
-            self._message_count = 0
+            # Reset internal variables
             self.update = {}
+            self._message_count = 0
+            # Execute user command
             if user_command is not None:
-                self._process_user_command(user_command)
+                device_command_list = self._parse_user_command(user_command)
+                self._execute_device_command_list(device_command_list)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Path to slow control config file')

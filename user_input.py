@@ -38,10 +38,6 @@ def parse_and_serialize_user_input(raw_user_input):
     if command not in commands:
         raise ValueError("command '{}' not recognized".format(command))
     args = commands[command].get('args', {})
-    # Handle special case for setting a repeating command
-    if '__command_args' in args:
-        args.pop('__command_args')
-        args.update(commands[args['command']].get('args', {}))
     unspecified_args = [a for a in args if args[a] is None 
             or isinstance(a, dict) and args[a].get('value') is None]
     if len(user_input) == len(args):

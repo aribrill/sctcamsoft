@@ -4,9 +4,9 @@
 #   device: 'device'
 #   command: 'command'
 #   args: # optional. default: {}
-#       - 'arg1': 'default_value'
-#       - 'arg2': null # no default value - arg must be specified by user
-#       ... # values for some, all, or none of args may be specified
+#       - 'arg1': 'default_val'
+#       - 'arg2': null # no default val - arg must be specified by user
+#       ... # vals for some, all, or none of args may be specified
 # 
 # High level command (list of commands which may be for different devices):
 # 'command_name':
@@ -15,12 +15,12 @@
 #       - 'command_name_2'
 #       ...
 #   args: # optional. default: {}
-#       'arg1': {list_index: 0, arg: 'command1_arg1', value: null}
-#       'arg2': {list_index: 0, arg: 'command1_arg2', value: 'default_value'}
-#       'arg3': {list_index: 1, arg: 'command2_arg', value: 'default_value'}
+#       'arg1': {index: 0, arg: 'command1_arg1', val: null}
+#       'arg2': {index: 0, arg: 'command1_arg2', val: 'default_val'}
+#       'arg3': {index: 1, arg: 'command2_arg', val: 'default_val'}
 #       ... # vals for some, all, or none of args may be specified
 # 
-# User-provided argument values may override those specified with the value
+# User-provided argument vals may override those specified with the val
 # parameter. The commands in a high level command command_list may themselves
 # be either low level or high level commands.
 
@@ -67,15 +67,20 @@ set_alert:
         variable: null
         lower_limit: null
         upper_limit: null
-# TODO: fix implementation
-set_repeating_command:
-    device: server
-    command: set_repeating_command
+
+# Special commands with device 'null' to set execution mode
+# Every mode entering command must have a corresponding mode exit afterward
+
+enter_repeat_mode:
+    device: null
+    command: enter_repeat_mode
     args:
-        interval: null
-        command: null
-        # Automatically replaced by the args of the specified command
-        __command_args: null
+        interval: null # seconds
+        n_executions: null # Set to a integer > 0, or None to repeat forever
+        execute_immediately: False
+exit_repeat_mode:
+    device: null
+    command: exit_repeat_mode
 
 # High level commands (composed of multiple low level commands)
 
@@ -83,27 +88,21 @@ monitor_fans:
     command_list:
         - set_alert # fan voltage
         - set_alert # fan current
-        - set_repeating_command # fan:read_voltage
-        - set_repeating_command # fan:read_current
+        - enter_repeat_mode
+        - fan:read_voltage
+        - fan:read_current
+        - exit_repeat_mode
     args:
-        alert1_device: {list_index: 0, arg: device, value: fan}
-        alert1_variable: {list_index: 0, arg: variable, value: voltage}
-        alert1_lower_limit: {list_index: 0, arg: lower_limit, value: 23} # V
-        alert1_upper_limit: {list_index: 0, arg: upper_limit, value: 25} # V
-        alert2_device: {list_index: 1, arg: device, value: fan}
-        alert2_variable: {list_index: 1, arg: variable, value: current}
-        alert2_lower_limit: {list_index: 1, arg: lower_limit, value: 14} # A
-        alert2_upper_limit: {list_index: 1, arg: upper_limit, value: 16} # A
-        repeat1_command:
-            list_index: 2
-            arg: command
-            value: 'fan:read_voltage'
-        repeat1_interval: {list_index: 2, arg: interval, value: 30} # s
-        repeat2_command:
-            list_index: 3
-            arg: command
-            value: 'fan:read_current'
-        repeat2_interval: {list_index: 3, arg: interval, value: 30} # s
+        alert1_device: {index: 0, arg: device, val: fan}
+        alert1_variable: {index: 0, arg: variable, val: voltage}
+        alert1_lower_limit: {index: 0, arg: lower_limit, val: 23} # V
+        alert1_upper_limit: {index: 0, arg: upper_limit, val: 25} # V
+        alert2_device: {index: 1, arg: device, val: fan}
+        alert2_variable: {index: 1, arg: variable, val: current}
+        alert2_lower_limit: {index: 1, arg: lower_limit, val: 14} # A
+        alert2_upper_limit: {index: 1, arg: upper_limit, val: 16} # A
+        repeat_interval: {index: 2, arg: interval, val: 30}
+        n_executions: {index: 2, arg: n_executions, val: null}
 
 start_fans:
     command_list:
@@ -112,7 +111,7 @@ start_fans:
         - fan:read_current
         - fan:read_voltage
     args:
-        sleep_secs: {list_index: 1, arg: secs, value: 3}
+        sleep_secs: {index: 1, arg: secs, val: 3}
 
 stop_fans:
     command_list:
@@ -121,7 +120,7 @@ stop_fans:
         - fan:read_current
         - fan:read_voltage
     args:
-        sleep_secs: {list_index: 1, arg: secs, value: 3}
+        sleep_secs: {index: 1, arg: secs, val: 3}
 
 power_on_camera:
     command_list:
@@ -146,24 +145,43 @@ test_server:
         - test_server2
     args:
         message1:
-            list_index: 0
+            index: 0
             arg: message
-            value: "Testing the slow control server."
-        message2:
-            list_index: 1
-            arg: message
-            value: "It's working!"
+            val: "Testing the slow control server."
+        message2: {index: 1, arg: message, val: "It's working!"}
 
 test_server2:
     command_list:
         - print
         - print
+        - test_server3
     args:
-        message1:
-            list_index: 0
-            arg: message
-            value: "Here's another message"
-        message2:
-            list_index: 1
-            arg: message
-            value: "Yup, still working!"
+        message1: {index: 0, arg: message, val: "Here's another message"}
+        message2: {index: 1, arg: message, val: "Yup, still working!"}
+
+test_server3:
+    command_list:
+        - print
+        - enter_repeat_mode
+        - print
+        - enter_repeat_mode
+        - print
+        - exit_repeat_mode
+        - enter_repeat_mode
+        - print
+        - exit_repeat_mode
+        - exit_repeat_mode
+        - print
+    args:
+        msg1: {index: 0, arg: message, val: "Trying stuff..."}
+        interval_1: {index: 1, arg: interval, val: 6}
+        n_executions_1: {index: 1, arg: n_executions, val: 3}
+        execute_immediately: {index: 1, arg: execute_immediately, val: True}
+        msg2: {index: 2, arg: message, val: "Hello,"}
+        interval_2: {index: 3, arg: interval, val: 1}
+        n_executions_2: {index: 3, arg: n_executions, val: 4}
+        msg3: {index: 4, arg: message, val: 'W-'}
+        interval_3: {index: 6, arg: interval, val: 5}
+        n_executions_3: {index: 6, arg: n_executions, val: 1}
+        msg4: {index: 7, arg: message, val: "World!"}
+        msg5: {index: 10, arg: message, val: "Stuff tried."}
