@@ -7,7 +7,7 @@
 #       - 'arg1': 'default_val'
 #       - 'arg2': null # no default val - arg must be specified by user
 #       ... # vals for some, all, or none of args may be specified
-# 
+#
 # High level command (list of commands which may be for different devices):
 # 'command_name':
 #   command_list:
@@ -19,10 +19,11 @@
 #       'arg2': {index: 0, arg: 'command1_arg2', val: 'default_val'}
 #       'arg3': {index: 1, arg: 'command2_arg', val: 'default_val'}
 #       ... # vals for some, all, or none of args may be specified
-# 
+#
 # User-provided argument vals may override those specified with the val
 # parameter. The commands in a high level command command_list may themselves
 # be either low level or high level commands.
+---
 
 # Low level commands
 fan:open_connection: {device: fan, command: open_connection}
@@ -75,9 +76,9 @@ enter_repeat_mode:
     device: null
     command: enter_repeat_mode
     args:
-        interval: null # seconds
-        n_executions: null # Set to a integer > 0, or None to repeat forever
-        execute_immediately: False
+        interval: null  # seconds
+        n_executions: null  # Set to a integer > 0, or None to repeat forever
+        execute_immediately: 'False'
 exit_repeat_mode:
     device: null
     command: exit_repeat_mode
@@ -86,8 +87,8 @@ exit_repeat_mode:
 
 monitor_fans:
     command_list:
-        - set_alert # fan voltage
-        - set_alert # fan current
+        - set_alert  # fan voltage
+        - set_alert  # fan current
         - enter_repeat_mode
         - fan:read_voltage
         - fan:read_current
@@ -95,12 +96,12 @@ monitor_fans:
     args:
         alert1_device: {index: 0, arg: device, val: fan}
         alert1_variable: {index: 0, arg: variable, val: voltage}
-        alert1_lower_limit: {index: 0, arg: lower_limit, val: 23} # V
-        alert1_upper_limit: {index: 0, arg: upper_limit, val: 25} # V
+        alert1_lower_limit: {index: 0, arg: lower_limit, val: 23}  # V
+        alert1_upper_limit: {index: 0, arg: upper_limit, val: 25}  # V
         alert2_device: {index: 1, arg: device, val: fan}
         alert2_variable: {index: 1, arg: variable, val: current}
-        alert2_lower_limit: {index: 1, arg: lower_limit, val: 14} # A
-        alert2_upper_limit: {index: 1, arg: upper_limit, val: 16} # A
+        alert2_lower_limit: {index: 1, arg: lower_limit, val: 14}  # A
+        alert2_upper_limit: {index: 1, arg: upper_limit, val: 16}  # A
         repeat_interval: {index: 2, arg: interval, val: 30}
         n_executions: {index: 2, arg: n_executions, val: null}
 
@@ -176,7 +177,7 @@ test_server3:
         msg1: {index: 0, arg: message, val: "Trying stuff..."}
         interval_1: {index: 1, arg: interval, val: 6}
         n_executions_1: {index: 1, arg: n_executions, val: 3}
-        execute_immediately: {index: 1, arg: execute_immediately, val: True}
+        execute_immediately: {index: 1, arg: execute_immediately, val: 'True'}
         msg2: {index: 2, arg: message, val: "Hello,"}
         interval_2: {index: 3, arg: interval, val: 1}
         n_executions_2: {index: 3, arg: n_executions, val: 4}

@@ -1,4 +1,5 @@
 # Configuration file for SCT Camera slow control
+---
 
 User Interface:
     host: thinkpad
@@ -13,5 +14,4 @@ fan:
 
 power:
     ip: ''
-    MIB_list_path: '' 
-
+    MIB_list_path: ''
