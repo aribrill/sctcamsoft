@@ -7,6 +7,31 @@ from collections import namedtuple
 # DeviceController shall cast them to another type if needed.
 DeviceCommand = namedtuple('DeviceCommand', ['device', 'command', 'args'])
 
+class SlowControlError(Exception):
+    """Base class for custom exceptions in the slow control software"""
+    pass
+
+class CommandNameError(SlowControlError):
+    """Exception raised for invalid command names."""
+    pass
+
+class CommandSequenceError(SlowControlError):
+    """Exception raised for calling a command in an unsupported order.
+    For example, opening a connection when it is already open."""
+    pass
+
+class CommunicationError(SlowControlError):
+    """Exception raised for errors communicating with a device"""
+    pass
+
+class ConfigurationError(SlowControlError):
+    """Exception raised for errors from invalid configuration parameters"""
+    pass
+
+class DeviceNameError(SlowControlError):
+    """Exception raised for invalid device names."""
+    pass
+
 class DeviceController(ABC):
 
     @abstractmethod
@@ -17,10 +42,4 @@ class DeviceController(ABC):
     # a dict containing update values or None.
     @abstractmethod
     def execute_command(self, command):
-        raise NotImplementedError()
-
-    # Return True if device is initialized and able to communicate, and
-    # False otherwise.
-    @abstractmethod
-    def is_ready(self):
         raise NotImplementedError()

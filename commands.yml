@@ -116,6 +116,7 @@ monitor:
 
 start_fans:
     command_list:
+        - fan:open_connection
         - fan:turn_on
         - fan:read_current
         - fan:read_voltage
@@ -125,10 +126,11 @@ stop_fans:
         - fan:turn_off
         - fan:read_current
         - fan:read_voltage
+        - fan:close_connection
 
 power_on_camera:
     command_list:
-        - power:start_main_switch
+        - power:turn_on_main_switch
         - power:start_supply
         - power:read_supply_nominal_voltage
         - power:read_supply_measured_voltage
@@ -137,7 +139,7 @@ power_on_camera:
 power_off_camera:
     command_list:
         - power:stop_supply
-        - power:stop_main_switch
+        - power:turn_off_main_switch
         - power:read_supply_nominal_voltage
         - power:read_supply_measured_voltage
         - power:read_supply_current

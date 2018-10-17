@@ -9,7 +9,7 @@ import time
 
 import yaml
 
-from slow_control_classes import DeviceCommand, DeviceController
+from slow_control_classes import *
 from fan_control import FanController
 from power_control import PowerController
 import slow_control_pb2 as sc
@@ -90,6 +90,7 @@ class ServerController(DeviceController):
         self.user_commands = user_commands
         # For uniquely labeling messages; reset in each update
         self._message_count = 0
+        self._error_count = 0
         print("Initializing devices:")
         self.device_controllers = {'server': self}
         for device, controller in devices.items():
@@ -200,12 +201,26 @@ class ServerController(DeviceController):
                 repeat_cmds.append(dc)
             # Execute the command
             else:
-                try:
-                    device_controller = self.device_controllers[dc.device]
-                    device_update = device_controller.execute_command(dc)
-                # TODO: Handle exceptions gracefully
-                except Exception as e:
-                    raise
+                try: # Handling for all exceptions
+                    try:
+                        device_controller = self.device_controllers[dc.device]
+                    except KeyError as e:
+                        raise DeviceNameError("Warning: invalid device: "
+                                "{}".format(dc.device))
+                    try: # Handling for specific exceptions
+                        device_update = device_controller.execute_command(dc)
+                    except CommandNameError:
+                        raise CommandNameError("Warning: invalid command "
+                                "name: {}".format(dc.command))
+                    except CommunicationError:
+                        raise CommunicationError("Warning: cannot communicate "
+                                "with {} controller".format(dc.device))
+                except (CommandNameError, CommandSequenceError,
+                        CommunicationError, ConfigurationError,
+                        DeviceNameError) as e:
+                    device_update = {'server':
+                            {'error_' + str(self._error_count): e}}
+                    self._error_count += 1
                 # Add device update to rest of the updates
                 if device_update is not None:
                     for device, values in device_update.items():
@@ -227,7 +242,7 @@ class ServerController(DeviceController):
                 lower_limit=float(command.args['lower_limit']),
                 upper_limit=float(command.args['upper_limit'])))
         else:
-            raise ValueError("command {} not recognized".format(cmd))
+            raise CommandNameError
         
         return {'server': update} if update else None
 
@@ -260,9 +275,6 @@ class ServerController(DeviceController):
                 timer['passed'] = False
                 self._execute_device_command_list(timer['command_list'])
 
-    def is_ready(self):
-        return True
-
     def run_server(self):
         # Start server main loop
         while True:
@@ -275,6 +287,7 @@ class ServerController(DeviceController):
             # Reset internal variables
             self.update = {}
             self._message_count = 0
+            self._error_count = 0
             # Execute user command
             if user_command is not None:
                 device_command_list = self._parse_user_command(user_command)

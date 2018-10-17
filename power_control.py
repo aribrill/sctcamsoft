@@ -3,17 +3,18 @@
 import os
 import subprocess
 
-from slow_control_classes import DeviceCommand, DeviceController
+from slow_control_classes import *
 
 class PowerController(DeviceController):
 
     def __init__(self, config):
         self.ip = config['ip']
         self.MIB_list_path = config['MIB_list_path']
-        if not self.is_ready():
-            print("Warning: power control not set up")
 
     def _snmp_cmd(self, snmpcmd, parameters):
+        if not os.path.isfile(self.MIB_list_path):
+            raise ConfigurationError("No MIB list found at path".format(
+                self.MIB_list_path))
         snmp_command = (snmpcmd + ' -v 2c -m ' + self.MIB_list_path +
                 ' -c guru ' + self.ip + ' ' + parameters)
         return snmp_command.split()
@@ -64,29 +65,22 @@ class PowerController(DeviceController):
                 'read_HV_nominal_voltage': 'HV_nominal_voltage',
                 'read_HV_measured_voltage': 'HV_measured_voltage'
                 }
-        if not self.is_ready():
-            print("Warning: skipping command, power control is not ready")
-            return None
-        if cmd in ['turn_on_main_switch', 'turn_off_main_switch',
-                'start_supply', 'stop_supply', 'start_HV', 'stop_HV']:
-            for snmp_command in snmp_commands:
-                subprocess.run(snmp_command)
-            return None
-        elif cmd in update_commands:
-            snmp_command = snmp_commands[0]
-            completed_process = subprocess.run(snmp_command, check=True,
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    encoding='ascii')
-            # Parse output string to get numerical reading
-            # Units are V and A
-            update = float(completed_process.stdout.split()[-2])
-            return {update_commands[cmd]: update}
-        else:
-            raise ValueError("command {} not recognized".format(cmd))
-
-    def is_ready(self):
-        is_ready = True
-        if not os.path.isfile(self.MIB_list_path):
-            print("No MIB list found at path".format(self.MIB_list_path))
-            is_ready = False
-        return is_ready
+        try:
+            if cmd in ['turn_on_main_switch', 'turn_off_main_switch',
+                    'start_supply', 'stop_supply', 'start_HV', 'stop_HV']:
+                for snmp_command in snmp_commands:
+                    subprocess.run(snmp_command)
+                return None
+            elif cmd in update_commands:
+                snmp_command = snmp_commands[0]
+                completed_process = subprocess.run(snmp_command, check=True,
+                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                        encoding='ascii')
+                # Parse output string to get numerical reading
+                # Units are V and A
+                update = float(completed_process.stdout.split()[-2])
+                return {update_commands[cmd]: update}
+            else:
+                raise CommandNameError
+        except OSError as e:
+            raise CommunicationError from e

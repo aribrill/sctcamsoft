@@ -12,7 +12,7 @@ import time
 
 import serial
 
-from slow_control_classes import DeviceCommand, DeviceController
+from slow_control_classes import *
 
 SLEEP_SECS = 3
 
@@ -21,16 +21,12 @@ class FanController(DeviceController):
     def __init__(self, config):
         self.config = config
         self._ser = None
-        self._open_connection()
-        if not self.is_ready():
-            print("Warning: fan control not set up")
 
     def _open_connection(self):
         protocol = self.config.get('protocol', 'telnet')
         if self._ser is not None:
-            print("Warning: connection to fan is already open, close before "
-                    "reopening.")
-            return 
+            raise CommandSequenceError("Connection to fan is already open, "
+                    "close before reopening.")
         try:
             if protocol == 'serial':
                 self._ser = serial.Serial(port='/dev/ttyACM0',
@@ -47,13 +43,10 @@ class FanController(DeviceController):
                 else:
                     self._ser = telnetlib.Telnet(host, port, timeout)
             else:
-                raise ValueError("ERROR: Unknown protocol '{}'".format(protocol))
-        except socket.timeout as e:
-            print("WARNING: Could not connect to fan")
-        except ConnectionRefusedError as e:
-            print("WARNING: Connection refused")
+                raise ConfigurationError("unknown protocol '{}'".format(
+                    protocol))
         except OSError as e:
-            print("WARNING: Camera fan power supply unavailable")
+            raise CommunicationError() from e
 
     def _close_connection(self):
         if self._ser is not None:
@@ -61,22 +54,27 @@ class FanController(DeviceController):
         self._ser = None
 
     def _send_cmd(self, cmd):
-        self._ser.write("{}\n".format(cmd).encode('ascii'))
-        time.sleep(0.5)
-        val = self._ser.read_until('\n'.encode('ascii'), timeout=1)
-        val = val.decode('ascii')[:6] # strip non-numerical output
-        return val
+        try:
+            self._ser.write("{}\n".format(cmd).encode('ascii'))
+            time.sleep(0.5)
+            val = self._ser.read_until('\n'.encode('ascii'), timeout=1)
+            val = val.decode('ascii')[:6] # strip non-numerical output
+            return val
+        except OSError as e:
+            self._ser = None
+            raise CommunicationError() from e
 
     def execute_command(self, command):
         cmd = command.command
         update = None
-        if not self.is_ready():
-            print("Warning: skipping command, fan is not ready")
-            return update
         if cmd == "open_connection":
             self._open_connection()
+        elif self._ser is None:
+            raise CommunicationError()
         elif cmd == "close_connection":
             self._close_connection()
+        elif cmd == "check_connection":
+            update = {'connected': self._ser is not None}
         elif cmd == "turn_on":
             self._send_cmd("PWR ON")
             time.sleep(SLEEP_SECS)
@@ -90,8 +88,5 @@ class FanController(DeviceController):
             current = self._send_cmd("IREAD")
             update = {'current': current}
         else:
-            raise ValueError("command {} not recognized".format(cmd))
+            raise CommandNameError
         return update
-
-    def is_ready(self):
-        return (self._ser is not None)
