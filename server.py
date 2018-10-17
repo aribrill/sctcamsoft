@@ -174,7 +174,8 @@ class ServerController(DeviceController):
                             'execute_immediately': repeat_params.execute_immediately,
                             'command_list': repeat_cmds}
                     if timer['execute_immediately']:
-                        timer['n_executions'] -= 1
+                        if timer['n_executions'] is not None:
+                            timer['n_executions'] -= 1
                         timer['passed'] = True
                     else:
                         timer['passed'] = False
@@ -220,8 +221,6 @@ class ServerController(DeviceController):
             update = {'message' + str(self._message_count): 
                     command.args['message']}
             self._message_count += 1
-        elif cmd == 'sleep':
-            time.sleep(float(command.args['secs']))
         elif cmd == 'set_alert':
             self.alerts.append(Alert(device=command.args['device'],
                 variable=command.args['variable'],

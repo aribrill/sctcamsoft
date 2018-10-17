@@ -56,10 +56,6 @@ print:
     device: server
     command: print_message
     args: {message: null}
-server:sleep:
-    device: server
-    command: sleep
-    args: {secs: null}
 set_alert:
     device: server
     command: set_alert
@@ -85,13 +81,17 @@ exit_repeat_mode:
 
 # High level commands (composed of multiple low level commands)
 
-monitor_fans:
+monitor:
     command_list:
         - set_alert  # fan voltage
         - set_alert  # fan current
+        - set_alert  # main power supply current
+        - set_alert  # HV current
         - enter_repeat_mode
         - fan:read_voltage
         - fan:read_current
+        - power:read_supply_current
+        - power:read_HV_current
         - exit_repeat_mode
     args:
         alert1_device: {index: 0, arg: device, val: fan}
@@ -102,26 +102,29 @@ monitor_fans:
         alert2_variable: {index: 1, arg: variable, val: current}
         alert2_lower_limit: {index: 1, arg: lower_limit, val: 14}  # A
         alert2_upper_limit: {index: 1, arg: upper_limit, val: 16}  # A
-        repeat_interval: {index: 2, arg: interval, val: 30}
-        n_executions: {index: 2, arg: n_executions, val: null}
+        alert3_device: {index: 2, arg: device, val: power}
+        alert3_variable: {index: 2, arg: variable, val: supply_current}
+        alert3_lower_limit: {index: 2, arg: lower_limit, val: 0}  # A
+        alert3_upper_limit: {index: 2, arg: upper_limit, val: 4}  # A
+        alert4_device: {index: 3, arg: device, val: power}
+        alert4_variable: {index: 3, arg: variable, val: HV_current}
+        alert4_lower_limit: {index: 3, arg: lower_limit, val: 0}  # A
+        alert4_upper_limit: {index: 3, arg: upper_limit, val: 1}  # A
+        repeat_interval: {index: 4, arg: interval, val: 30}
+        n_executions: {index: 4, arg: n_executions, val: null}
+        execute_immediately: {index: 4, arg: execute_immediately, val: 'True'}
 
 start_fans:
     command_list:
         - fan:turn_on
-        - server:sleep
         - fan:read_current
         - fan:read_voltage
-    args:
-        sleep_secs: {index: 1, arg: secs, val: 3}
 
 stop_fans:
     command_list:
         - fan:turn_off
-        - server:sleep
         - fan:read_current
         - fan:read_voltage
-    args:
-        sleep_secs: {index: 1, arg: secs, val: 3}
 
 power_on_camera:
     command_list:

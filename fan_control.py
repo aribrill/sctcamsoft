@@ -14,6 +14,8 @@ import serial
 
 from slow_control_classes import DeviceCommand, DeviceController
 
+SLEEP_SECS = 3
+
 class FanController(DeviceController):
 
     def __init__(self, config):
@@ -77,8 +79,10 @@ class FanController(DeviceController):
             self._close_connection()
         elif cmd == "turn_on":
             self._send_cmd("PWR ON")
+            time.sleep(SLEEP_SECS)
         elif cmd == "turn_off":
             self._send_cmd("PWR OFF")
+            time.sleep(SLEEP_SECS)
         elif cmd == "read_voltage":
             voltage = self._send_cmd("VREAD")
             update = {'voltage': voltage}
