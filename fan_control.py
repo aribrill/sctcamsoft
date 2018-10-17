@@ -19,32 +19,23 @@ SLEEP_SECS = 3
 class FanController(DeviceController):
 
     def __init__(self, config):
-        self.config = config
+        self._telnet_settings = {'host': None, 'port': None, 'timeout': None}
+        for setting in self._telnet_settings:
+            try:
+                self._telnet_settings[setting] = config[setting]
+            except KeyError as e:
+                raise ConfigurationError(setting) from e
         self._ser = None
 
     def _open_connection(self):
-        protocol = self.config.get('protocol', 'telnet')
         if self._ser is not None:
             raise CommandSequenceError("Connection to fan is already open, "
                     "close before reopening.")
         try:
-            if protocol == 'serial':
-                self._ser = serial.Serial(port='/dev/ttyACM0',
-                        baudrate=115200,
-                        bytesize=8,
-                        parity='N',
-                        stopbits=1)
-            elif protocol == 'telnet':
-                host = self.config['telnet_host']
-                port = self.config['telnet_port']
-                timeout = self.config.get('telnet_timeout', None)
-                if timeout is None:
-                    self._ser = telnetlib.Telnet(host, port)
-                else:
-                    self._ser = telnetlib.Telnet(host, port, timeout)
-            else:
-                raise ConfigurationError("unknown protocol '{}'".format(
-                    protocol))
+            self._ser = telnetlib.Telnet(
+                    self._telnet_settings['host'],
+                    self._telnet_settings['port'],
+                    self._telnet_settings['timeout'])
         except OSError as e:
             raise CommunicationError() from e
 

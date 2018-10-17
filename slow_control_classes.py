@@ -11,6 +11,10 @@ class SlowControlError(Exception):
     """Base class for custom exceptions in the slow control software"""
     pass
 
+class CommandArgumentError(SlowControlError):
+    """Exception raised for invalid or missing command arguments"""
+    pass
+
 class CommandNameError(SlowControlError):
     """Exception raised for invalid command names."""
     pass
@@ -25,7 +29,8 @@ class CommunicationError(SlowControlError):
     pass
 
 class ConfigurationError(SlowControlError):
-    """Exception raised for errors from invalid configuration parameters"""
+    """Exception raised for missing or invalid configuration parameters.
+    Raise only during initialization."""
     pass
 
 class DeviceNameError(SlowControlError):

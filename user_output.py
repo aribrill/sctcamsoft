@@ -17,8 +17,8 @@ args = parser.parse_args()
 
 with open(args.config_file, 'r') as config_file:
     config = yaml.load(config_file)
-server_host = config['User Interface']['host']
-server_port = config['User Interface']['output_port']
+server_host = config['user_interface']['host']
+server_port = config['user_interface']['output_port']
 
 # Open a socket to the slow control server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

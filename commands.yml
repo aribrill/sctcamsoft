@@ -74,7 +74,7 @@ enter_repeat_mode:
     args:
         interval: null  # seconds
         n_executions: null  # Set to a integer > 0, or None to repeat forever
-        execute_immediately: 'False'
+        execute_immediately: false
 exit_repeat_mode:
     device: null
     command: exit_repeat_mode
@@ -112,7 +112,7 @@ monitor:
         alert4_upper_limit: {index: 3, arg: upper_limit, val: 1}  # A
         repeat_interval: {index: 4, arg: interval, val: 30}
         n_executions: {index: 4, arg: n_executions, val: null}
-        execute_immediately: {index: 4, arg: execute_immediately, val: 'True'}
+        execute_immediately: {index: 4, arg: execute_immediately, val: true}
 
 start_fans:
     command_list:

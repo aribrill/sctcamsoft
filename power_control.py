@@ -8,18 +8,21 @@ from slow_control_classes import *
 class PowerController(DeviceController):
 
     def __init__(self, config):
-        self.ip = config['ip']
-        self.MIB_list_path = config['MIB_list_path']
+        try:
+            self.ip = config['ip']
+        except KeyError as e:
+            raise ConfigurationError('ip') from e
+        try:
+            self.MIB_list_path = config['MIB_list_path']
+        except KeyError as e:
+            raise ConfigurationError('MIB_list_path') from e
 
     def _snmp_cmd(self, snmpcmd, parameters):
-        if not os.path.isfile(self.MIB_list_path):
-            raise ConfigurationError("No MIB list found at path".format(
-                self.MIB_list_path))
         snmp_command = (snmpcmd + ' -v 2c -m ' + self.MIB_list_path +
                 ' -c guru ' + self.ip + ' ' + parameters)
         return snmp_command.split()
 
-    def _list_snmp_commands(self, cmd):
+    def _cmd_to_snmp(self, cmd):
         cmd_to_snmp = {
                 'turn_on_main_switch': [
                     self._snmp_cmd('snmpset', 'sysMainSwitch.0 i 1'),
@@ -52,11 +55,15 @@ class PowerController(DeviceController):
                     self._snmp_cmd('snmpwalk',
                         'outputMeasurementSenseVoltage.u4')]
                 }
-        return cmd_to_snmp[cmd]
+        try:
+            snmp_commands = cmd_to_snmp[cmd]
+        except KeyError as e:
+            raise CommandNameError from e
+        return snmp_commands
 
     def execute_command(self, command):
         cmd = command.command
-        snmp_commands = self._list_snmp_commands(cmd)
+        snmp_commands = self._cmd_to_snmp(cmd)
         update_commands = {
                 'read_supply_current': 'supply_current',
                 'read_supply_nominal_voltage': 'supply_nominal_voltage',
@@ -66,12 +73,7 @@ class PowerController(DeviceController):
                 'read_HV_measured_voltage': 'HV_measured_voltage'
                 }
         try:
-            if cmd in ['turn_on_main_switch', 'turn_off_main_switch',
-                    'start_supply', 'stop_supply', 'start_HV', 'stop_HV']:
-                for snmp_command in snmp_commands:
-                    subprocess.run(snmp_command)
-                return None
-            elif cmd in update_commands:
+            if cmd in update_commands:
                 snmp_command = snmp_commands[0]
                 completed_process = subprocess.run(snmp_command, check=True,
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -81,6 +83,8 @@ class PowerController(DeviceController):
                 update = float(completed_process.stdout.split()[-2])
                 return {update_commands[cmd]: update}
             else:
-                raise CommandNameError
+                for snmp_command in snmp_commands:
+                    subprocess.run(snmp_command)
+                return None
         except OSError as e:
             raise CommunicationError from e
