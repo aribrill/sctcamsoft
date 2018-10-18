@@ -9,42 +9,73 @@ DeviceCommand = namedtuple('DeviceCommand', ['device', 'command', 'args'])
 
 class SlowControlError(Exception):
     """Base class for custom exceptions in the slow control software"""
-    pass
+    
+    def __init__(self, device):
+        self.device = device
+        self.message = ""
 
 class CommandArgumentError(SlowControlError):
     """Exception raised for invalid or missing command arguments"""
-    pass
+    
+    def __init__(self, device, command, argument, message):
+        self.device = device
+        self.command = command
+        self.argument = argument
+        self.message = "{}: {}: {}".format(command, argument, message)
 
 class CommandNameError(SlowControlError):
     """Exception raised for invalid command names."""
-    pass
+    
+    def __init__(self, device, command):
+        self.device = device
+        self.command = command
+        self.message = "{}: invalid command name".format(command)
 
 class CommandSequenceError(SlowControlError):
     """Exception raised for calling a command in an unsupported order.
     For example, opening a connection when it is already open."""
-    pass
+    
+    def __init__(self, device, command, message):
+        self.device = device
+        self.command = command
+        self.message = "{}: {}".format(command, message)
 
 class CommunicationError(SlowControlError):
     """Exception raised for errors communicating with a device"""
-    pass
+    
+    def __init__(self, device):
+        self.device = device
+        self.message = "{}: not connected".format(device)
 
 class ConfigurationError(SlowControlError):
     """Exception raised for missing or invalid configuration parameters.
     Raise only during initialization."""
-    pass
+    
+    def __init__(self, device, parameter, message):
+        self.device = device
+        self.parameter = parameter
+        self.message = "{}: {}: {}".format(device, parameter, message)
 
 class DeviceNameError(SlowControlError):
     """Exception raised for invalid device names."""
-    pass
+
+    def __init__(self, device):
+        self.device = device
+        self.message = "{}: invalid device".format(device)
 
 class VariableError(SlowControlError):
     """Exception raised for invalid variable values."""
-    pass
+    
+    def __init__(self, device, variable, value, message):
+        self.device = device
+        self.variable = variable
+        self.value = value
+        self.message = "{}: {}: {}: {}".format(device, variable, value, message)
 
 class DeviceController(ABC):
 
     @abstractmethod
-    def __init__(self, config, *args):
+    def __init__(self, device, config, *args):
         raise NotImplementedError()
 
     # Execute the specified command (of type DeviceCommand), returning either

@@ -7,15 +7,18 @@ from slow_control_classes import *
 
 class PowerController(DeviceController):
 
-    def __init__(self, config):
+    def __init__(self, device, config):
+        self.device = device
         try:
             self.ip = config['ip']
-        except KeyError as e:
-            raise ConfigurationError('ip') from e
+        except KeyError:
+            raise ConfigurationError(self.device, 'ip',
+                    "missing configuration parameter")
         try:
             self.MIB_list_path = config['MIB_list_path']
-        except KeyError as e:
-            raise ConfigurationError('MIB_list_path') from e
+        except KeyError:
+            raise ConfigurationError(self.device, 'MIB_list_path',
+                    "missing configuration parameter")
 
     def _snmp_cmd(self, snmpcmd, parameters):
         snmp_command = (snmpcmd + ' -v 2c -m ' + self.MIB_list_path +
@@ -57,8 +60,8 @@ class PowerController(DeviceController):
                 }
         try:
             snmp_commands = cmd_to_snmp[cmd]
-        except KeyError as e:
-            raise CommandNameError from e
+        except KeyError:
+            raise CommandNameError(self.device, cmd)
         return snmp_commands
 
     def execute_command(self, command):
@@ -86,5 +89,5 @@ class PowerController(DeviceController):
                 for snmp_command in snmp_commands:
                     subprocess.run(snmp_command)
                 return None
-        except OSError as e:
-            raise CommunicationError from e
+        except OSError:
+            raise CommunicationError(self.device)

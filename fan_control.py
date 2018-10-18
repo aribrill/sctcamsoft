@@ -18,26 +18,25 @@ SLEEP_SECS = 3
 
 class FanController(DeviceController):
 
-    def __init__(self, config):
+    def __init__(self, device, config):
+        self.device = device
         self._telnet_settings = {'host': None, 'port': None, 'timeout': None}
         for setting in self._telnet_settings:
             try:
                 self._telnet_settings[setting] = config[setting]
-            except KeyError as e:
-                raise ConfigurationError(setting) from e
+            except KeyError:
+                raise ConfigurationError(self.device, setting,
+                        "missing configuration parameter")
         self._ser = None
 
     def _open_connection(self):
-        if self._ser is not None:
-            raise CommandSequenceError("Connection to fan is already open, "
-                    "close before reopening.")
         try:
             self._ser = telnetlib.Telnet(
                     self._telnet_settings['host'],
                     self._telnet_settings['port'],
                     self._telnet_settings['timeout'])
-        except OSError as e:
-            raise CommunicationError() from e
+        except OSError:
+            raise CommunicationError(self.device)
 
     def _close_connection(self):
         if self._ser is not None:
@@ -51,17 +50,21 @@ class FanController(DeviceController):
             val = self._ser.read_until('\n'.encode('ascii'), timeout=1)
             val = val.decode('ascii')[:6] # strip non-numerical output
             return val
-        except OSError as e:
+        except OSError:
             self._ser = None
-            raise CommunicationError() from e
+            raise CommunicationError(self.device)
 
     def execute_command(self, command):
         cmd = command.command
         update = None
         if cmd == "open_connection":
+            if self._ser is not None:
+                raise CommandSequenceError(self.device, cmd, 
+                        "Fan connection is already open, "
+                        "close before reopening.")
             self._open_connection()
         elif self._ser is None:
-            raise CommunicationError()
+            raise CommunicationError(self.device)
         elif cmd == "close_connection":
             self._close_connection()
         elif cmd == "check_connection":
@@ -79,5 +82,5 @@ class FanController(DeviceController):
             current = self._send_cmd("IREAD")
             update = ('current', current)
         else:
-            raise CommandNameError
+            raise CommandNameError(self.device, cmd)
         return update

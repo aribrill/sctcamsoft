@@ -6,6 +6,7 @@ import selectors
 import socket
 import sys
 import threading
+import traceback
 
 import yaml
 
@@ -84,9 +85,10 @@ class UserHandler():
         
 class ServerController(DeviceController):
    
-    def __init__(self, config, user_commands, devices):
+    def __init__(self, device, config, user_commands, devices):
         print("Slow Control Server")
         print("Initializing server...")
+        self.device = device
         self.alerts = []
         self.timers = []
         self.user_handler = UserHandler(config['user_interface'])
@@ -94,22 +96,17 @@ class ServerController(DeviceController):
         self.user_commands = user_commands
         try:
             self._validate_commands(self.user_commands)
-        except ConfigurationError as e:
-            print("Error: the command '{}' is incorrectly defined. "
-                    "Shutting down.".format(str(e)))
-            sys.exit()
-        print("Configuring devices:")
-        self.device_controllers = {'server': self}
-        for device, controller in devices.items():
-            print("Configuring {}...".format(device))
-            try:
-                self.device_controllers[device] = controller(
+            print("Configuring devices:")
+            self.device_controllers = {self.device: self}
+            for device, controller in devices.items():
+                print("Configuring {}...".format(device))
+                self.device_controllers[device] = controller(device,
                         config.get(device, {}))
-            except ConfigurationError as e:
-                print("Error: the configuration parameter '{}' for device "
-                        "'{}' is missing or invalid. Shutting down.".format(
-                            str(e), device))
-                sys.exit()
+        except ConfigurationError as e:
+            print('Fatal Configuration Error:')
+            print(e.message)
+            print("Shutting down.")
+            sys.exit()
         print("Configuration complete.")
 
     def _validate_commands(self, user_commands):
@@ -122,34 +119,41 @@ class ServerController(DeviceController):
                     for key in ['interval', 'n_executions',
                             'execute_immediately']:
                         if not key in command_params['args']:
-                            raise ConfigurationError('enter_repeat_mode: args: '
-                                    + key)
+                            raise ConfigurationError(self.device,
+                                    "enter_repeat_mode: args: " + key,
+                                    "missing configuration parameter")
                 continue
             # High level commands
             if 'command_list' in command_params:
                 for arg, arg_keys in command_params.get('args', {}).items():
                     for key in ['index', 'arg']:
                         if not key in arg_keys:
-                            raise ConfigurationError(command_name + ': args: '
-                                    + arg + ': ' + key)
+                            raise ConfigurationError(self.device,
+                                    command_name + ': args: ' + arg + ': '
+                                    + key,
+                                    "missing configuration parameter")
                 continue
-            raise ConfigurationError(command_name)
+            raise ConfigurationError(self.device, command_name,
+                    "command definition must have device and command, "
+                    "or command list")
 
     # Break down user command into an unprocessed list of device commands
     # Recursively process nested high-level commands
     def _parse_user_command(self, user_command):
         
         # Combine command arguments from user input and prespecified values
-        def get_command_args(args, user_input):
+        def get_command_args(args, user_input, device, command):
             cmd_args = {**args, **user_input} # User input overrides values
             # Check for missing args
             missing_args = [a for a in cmd_args if a is None]
             for arg in missing_args:
-                raise CommandArgumentError('missing argument: {}'.format(arg))
+                raise CommandArgumentError(device, command, arg,
+                        "missing argument")
             # Check for extra args
             extra_args = list(set(cmd_args) - set(args))
             for arg in extra_args:
-                raise CommandArgumentError('extra argument: {}'.format(arg))
+                raise CommandArgumentError(device, command, arg,
+                        "extra argument")
             return cmd_args
 
         cmd_def = self.user_commands[user_command.command]
@@ -157,7 +161,8 @@ class ServerController(DeviceController):
         user_input = user_command.args
         # Base case: one command for a particular device ("low level")
         if 'device' in cmd_def and 'command' in cmd_def:
-            cmd_args = get_command_args(args, user_input)
+            cmd_args = get_command_args(args, user_input, cmd_def['device'],
+                    cmd_def['command'])
             device_command = DeviceCommand(cmd_def['device'],
                     cmd_def['command'], cmd_args)
             return [device_command]
@@ -171,7 +176,8 @@ class ServerController(DeviceController):
                         if 'val' in args[a] else None for a in sub_arg_names}
                 sub_user_input = {sub_arg_names[a]: user_input[a] 
                         for a in sub_arg_names if a in user_input}
-                cmd_args = get_command_args(sub_args, sub_user_input)
+                cmd_args = get_command_args(sub_args, sub_user_input,
+                        self.device, user_command.command)
                 user_subcommand = UserCommand(command, cmd_args)
                 device_subcommands = self._parse_user_command(user_subcommand)
                 device_commands.extend(device_subcommands)
@@ -227,24 +233,11 @@ class ServerController(DeviceController):
                 repeat_cmds.append(dc)
             # Execute the command
             else:
-                try: # Handling for all exceptions
-                    try:
-                        device_controller = self.device_controllers[dc.device]
-                    except KeyError as e:
-                        raise DeviceNameError("Warning: invalid device: "
-                                "{}".format(dc.device))
-                    try: # Handling for specific exceptions
-                        device_update = device_controller.execute_command(dc)
-                    except CommandNameError:
-                        raise CommandNameError("Warning: invalid command "
-                                "name: {}".format(dc.command))
-                    except CommunicationError:
-                        raise CommunicationError("Warning: cannot communicate "
-                                "with {} controller".format(dc.device))
-                except (CommandArgumentError, CommandNameError,
-                        CommandSequenceError, CommunicationError,
-                        DeviceNameError) as e:
-                    device_update = ('ERROR', e)
+                try:
+                    device_controller = self.device_controllers[dc.device]
+                except KeyError:
+                    raise DeviceNameError(device)
+                device_update = device_controller.execute_command(dc)
                 # Add device update to rest of the updates
                 if device_update is not None:
                     self.updates.append((dc.device,) + device_update)
@@ -255,10 +248,11 @@ class ServerController(DeviceController):
         if cmd == 'print_message':
             try:
                 message = command.args['message']
+                if message is None:
+                    raise KeyError
             except KeyError:
-                raise CommandArgumentError("missing argument 'message'")
-            if message is None:
-                raise CommandArgumentError('must be string: message')
+                raise CommandArgumentError(self.device, cmd, 'message',
+                        "missing argument")
             update = ('message', message)
         elif cmd == 'set_alert':
             alert_args = {}
@@ -268,21 +262,21 @@ class ServerController(DeviceController):
                 try:
                     alert_args[arg] = command.args[arg]
                 except KeyError:
-                    raise CommandArgumentError("missing argument '{}'".format(
-                        arg))
+                    raise CommandArgumentError('server', cmd, arg,
+                            "missing argument")
                 if alert_args[arg] is None:
-                    raise CommandArgumentError('unspecified argument: '
-                            '{}'.format(arg))
+                    raise CommandArgumentError('server', cmd, arg,
+                            "unspecified argument")
                 # Confirm limits have the correct type
                 if arg in ['lower_limit', 'upper_limit']:
                     try:
                         alert_args[arg] = float(alert_args[arg])
                     except ValueError:
-                        raise CommandArgumentError("'{}' must be float".format(
-                            arg))
+                        raise CommandArgumentError('server', cmd, arg,
+                                "argument must be float")
             self.alerts.append(Alert(**alert_args))
         else:
-            raise CommandNameError
+            raise CommandNameError('server', cmd)
         
         return update
 
@@ -296,8 +290,8 @@ class ServerController(DeviceController):
                             <= alert.upper_limit):
                         self.updates.append(('ALERT', alert.name, value))
                 except ValueError:
-                    raise VariableError("could not convert '{}' to "
-                            "float".format(variable_value))
+                    raise VariableError(device, variable, value,
+                            "could not convert to float for alert")
     
     def _execute_timed_commands(self):
         for timer in self.timers:
@@ -312,21 +306,23 @@ class ServerController(DeviceController):
     def run_server(self):
         # Start server main loop
         while True:
-            # Process any commands on an automatic timer
-            self._execute_timed_commands()
-            # Check alerts and add any found to update
-            self._check_alerts()
-            # Send an update to the user and receive a command (if any)
-            user_command = self.user_handler.communicate_user(self.updates)
-            # Reset internal variables
-            self.updates = []
-            # Execute user command
-            if user_command is not None:
-                try:
+            try:
+                # Send an update to the user and receive a command (if any)
+                user_command = self.user_handler.communicate_user(self.updates)
+                self.updates = []
+                # Execute user command
+                if user_command is not None:
                     device_command_list = self._parse_user_command(user_command)
-                except CommandArgumentError:
-                    continue
-                self._execute_device_command_list(device_command_list)
+                    self._execute_device_command_list(device_command_list)
+                # Process any commands on an automatic timer
+                self._execute_timed_commands()
+                # Check alerts and add any found to update
+                self._check_alerts()
+            except SlowControlError as e:
+                self.updates.append((e.device, 'ERROR', e.message))
+                print('---')
+                traceback.print_exc()
+                print('---')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Path to slow control config file')
@@ -340,10 +336,10 @@ with open(args.commands_file, 'r') as commands_file:
     user_commands = yaml.load(commands_file)
 
 devices = {
-#       'server': self --> automatically included
+#       'server': ServerController --> automatically included as self
         'fan': FanController,
         'power': PowerController
         }
-server = ServerController(config, user_commands, devices)
+server = ServerController('server', config, user_commands, devices)
 
 server.run_server()
