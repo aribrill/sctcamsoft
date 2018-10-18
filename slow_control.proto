@@ -9,9 +9,11 @@ message UserCommand {
 
 message UserUpdate {
     
-    message DeviceUpdate {
-        map<string, string> updates = 1;
+    message Update {
+        string device = 1;
+        string variable = 2;
+        string value = 3;
     }
-    
-    map<string, DeviceUpdate> devices = 1;
+   
+    repeated Update updates = 1;
 }

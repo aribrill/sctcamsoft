@@ -65,7 +65,7 @@ class FanController(DeviceController):
         elif cmd == "close_connection":
             self._close_connection()
         elif cmd == "check_connection":
-            update = {'connected': self._ser is not None}
+            update = ('connected', self._ser is not None)
         elif cmd == "turn_on":
             self._send_cmd("PWR ON")
             time.sleep(SLEEP_SECS)
@@ -74,10 +74,10 @@ class FanController(DeviceController):
             time.sleep(SLEEP_SECS)
         elif cmd == "read_voltage":
             voltage = self._send_cmd("VREAD")
-            update = {'voltage': voltage}
+            update = ('voltage', voltage)
         elif cmd == "read_current":
             current = self._send_cmd("IREAD")
-            update = {'current': current}
+            update = ('current', current)
         else:
             raise CommandNameError
         return update

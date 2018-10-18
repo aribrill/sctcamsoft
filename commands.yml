@@ -60,6 +60,7 @@ set_alert:
     device: server
     command: set_alert
     args:
+        name: null
         device: null
         variable: null
         lower_limit: null
@@ -94,18 +95,22 @@ monitor:
         - power:read_HV_current
         - exit_repeat_mode
     args:
+        alert1_name: {index: 0, arg: name, val: 'fan voltage'}
         alert1_device: {index: 0, arg: device, val: fan}
         alert1_variable: {index: 0, arg: variable, val: voltage}
         alert1_lower_limit: {index: 0, arg: lower_limit, val: 23}  # V
         alert1_upper_limit: {index: 0, arg: upper_limit, val: 25}  # V
+        alert2_name: {index: 1, arg: name, val: 'fan current'}
         alert2_device: {index: 1, arg: device, val: fan}
         alert2_variable: {index: 1, arg: variable, val: current}
         alert2_lower_limit: {index: 1, arg: lower_limit, val: 14}  # A
         alert2_upper_limit: {index: 1, arg: upper_limit, val: 16}  # A
+        alert3_name: {index: 2, arg: name, val: 'power supply current'}
         alert3_device: {index: 2, arg: device, val: power}
         alert3_variable: {index: 2, arg: variable, val: supply_current}
         alert3_lower_limit: {index: 2, arg: lower_limit, val: 0}  # A
         alert3_upper_limit: {index: 2, arg: upper_limit, val: 4}  # A
+        alert4_name: {index: 3, arg: name, val: 'HV current'}
         alert4_device: {index: 3, arg: device, val: power}
         alert4_variable: {index: 3, arg: variable, val: HV_current}
         alert4_lower_limit: {index: 3, arg: lower_limit, val: 0}  # A

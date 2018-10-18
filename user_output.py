@@ -32,7 +32,7 @@ while True:
     if serialized_message:
         user_update = sc.UserUpdate()
         user_update.ParseFromString(serialized_message)
-        for device in user_update.devices:
-            for key in sorted(user_update.devices[device].updates):
-                value = user_update.devices[device].updates[key]
-                print("{}: {}: {}".format(device, key, value))
+        updates = sorted([(update.device, update.variable, update.value)
+            for update in user_update.updates])
+        for device, variable, value in updates:
+            print("{}: {}: {}".format(device, variable, value))

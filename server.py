@@ -14,7 +14,7 @@ from fan_control import FanController
 from power_control import PowerController
 import slow_control_pb2 as sc
 
-Alert = namedtuple('Alert', ['device', 'variable', 'lower_limit',
+Alert = namedtuple('Alert', ['name', 'device', 'variable', 'lower_limit',
     'upper_limit'])
 UserCommand = namedtuple('UserCommand', ['command', 'args'])
 
@@ -60,11 +60,11 @@ class UserHandler():
             conn.close()
 
     def _write(self, conn, mask):
-        if self.user_update:
+        if self.user_update is not None:
             user_update = sc.UserUpdate()
-            for device in self.user_update:
-                for key, val in self.user_update[device].items():
-                    user_update.devices[device].updates[str(key)] = str(val)
+            for update_tuple in self.user_update:
+                update = user_update.updates.add()
+                update.device, update.variable, update.value = update_tuple
             self.user_update = None
             message = user_update.SerializeToString() 
             conn.sendall(message)
@@ -90,7 +90,7 @@ class ServerController(DeviceController):
         self.alerts = []
         self.timers = []
         self.user_handler = UserHandler(config['user_interface'])
-        self.update = {}
+        self.updates = []
         self.user_commands = user_commands
         try:
             self._validate_commands(self.user_commands)
@@ -98,9 +98,6 @@ class ServerController(DeviceController):
             print("Error: the command '{}' is incorrectly defined. "
                     "Shutting down.".format(str(e)))
             sys.exit()
-        # For uniquely labeling messages; reset in each update
-        self._message_count = 0
-        self._error_count = 0
         print("Configuring devices:")
         self.device_controllers = {'server': self}
         for device, controller in devices.items():
@@ -247,20 +244,11 @@ class ServerController(DeviceController):
                 except (CommandArgumentError, CommandNameError,
                         CommandSequenceError, CommunicationError,
                         DeviceNameError) as e:
-                    device_update = {'server':
-                            {'error_' + str(self._error_count): e}}
-                    self._error_count += 1
+                    device_update = ('ERROR', e)
                 # Add device update to rest of the updates
                 if device_update is not None:
-                    for device, values in device_update.items():
-                        if device not in self.update:
-                            self.update[device] = {}
-                        for key, value in values.items():
-                            self.update[device][key] = value
+                    self.updates.append((dc.device,) + device_update)
    
-    def variables(self):
-        return {'message': str}
-
     def execute_command(self, command):
         cmd = command.command
         update = None
@@ -271,12 +259,12 @@ class ServerController(DeviceController):
                 raise CommandArgumentError("missing argument 'message'")
             if message is None:
                 raise CommandArgumentError('must be string: message')
-            update = {'message' + str(self._message_count): message}
-            self._message_count += 1
+            update = ('message', message)
         elif cmd == 'set_alert':
             alert_args = {}
             # Parse arguments
-            for arg in ['device', 'variable', 'lower_limit', 'upper_limit']:
+            for arg in ['name', 'device', 'variable', 'lower_limit',
+                    'upper_limit']:
                 try:
                     alert_args[arg] = command.args[arg]
                 except KeyError:
@@ -288,7 +276,7 @@ class ServerController(DeviceController):
                 # Confirm limits have the correct type
                 if arg in ['lower_limit', 'upper_limit']:
                     try:
-                        float(arg)
+                        alert_args[arg] = float(alert_args[arg])
                     except ValueError:
                         raise CommandArgumentError("'{}' must be float".format(
                             arg))
@@ -296,27 +284,20 @@ class ServerController(DeviceController):
         else:
             raise CommandNameError
         
-        return {'server': update} if update else None
+        return update
 
     def _check_alerts(self):
-        for i, alert in enumerate(self.alerts):
-            alert_id = 'ALERT_{}'.format(i)
-            try:
-                variable_value = self.update[alert.device][alert.variable]
-                if not (alert.lower_limit <= float(variable_value) 
-                        <= alert.upper_limit):
-                    self.update[alert_id] = {
-                        'device': alert.device,
-                        'variable': alert.variable,
-                        'value': variable_value,
-                        'lower_limit': alert.lower_limit,
-                        'upper_limit': alert.upper_limit
-                        }
-            except KeyError as e: # Variable not in update, so just skip it
-                continue
-            except ValueError:
-                raise VariableError("could not convert '{}' to float".format(
-                    variable_value))
+        for alert in self.alerts:
+            for update in self.updates:
+                device, variable, value = update
+                try:
+                    if (device == alert.device and variable == alert.variable
+                            and not alert.lower_limit <= float(value) 
+                            <= alert.upper_limit):
+                        self.updates.append(('ALERT', alert.name, value))
+                except ValueError:
+                    raise VariableError("could not convert '{}' to "
+                            "float".format(variable_value))
     
     def _execute_timed_commands(self):
         for timer in self.timers:
@@ -336,11 +317,9 @@ class ServerController(DeviceController):
             # Check alerts and add any found to update
             self._check_alerts()
             # Send an update to the user and receive a command (if any)
-            user_command = self.user_handler.communicate_user(self.update)
+            user_command = self.user_handler.communicate_user(self.updates)
             # Reset internal variables
-            self.update = {}
-            self._message_count = 0
-            self._error_count = 0
+            self.updates = []
             # Execute user command
             if user_command is not None:
                 try:

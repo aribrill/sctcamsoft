@@ -80,8 +80,8 @@ class PowerController(DeviceController):
                         encoding='ascii')
                 # Parse output string to get numerical reading only
                 # Units are V and A
-                update = completed_process.stdout.split()[-2]
-                return {update_commands[cmd]: update}
+                update_value = completed_process.stdout.split()[-2]
+                return (update_commands[cmd], update_value)
             else:
                 for snmp_command in snmp_commands:
                     subprocess.run(snmp_command)
