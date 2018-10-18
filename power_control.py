@@ -64,7 +64,7 @@ class PowerController(DeviceController):
     def execute_command(self, command):
         cmd = command.command
         snmp_commands = self._cmd_to_snmp(cmd)
-        update_commands = {
+        commands_with_variables = {
                 'read_supply_current': 'supply_current',
                 'read_supply_nominal_voltage': 'supply_nominal_voltage',
                 'read_supply_measured_voltage': 'supply_measured_voltage',
@@ -73,14 +73,14 @@ class PowerController(DeviceController):
                 'read_HV_measured_voltage': 'HV_measured_voltage'
                 }
         try:
-            if cmd in update_commands:
+            if cmd in commands_with_variables:
                 snmp_command = snmp_commands[0]
                 completed_process = subprocess.run(snmp_command, check=True,
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                         encoding='ascii')
-                # Parse output string to get numerical reading
+                # Parse output string to get numerical reading only
                 # Units are V and A
-                update = float(completed_process.stdout.split()[-2])
+                update = completed_process.stdout.split()[-2]
                 return {update_commands[cmd]: update}
             else:
                 for snmp_command in snmp_commands:

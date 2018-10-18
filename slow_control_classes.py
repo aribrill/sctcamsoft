@@ -37,6 +37,10 @@ class DeviceNameError(SlowControlError):
     """Exception raised for invalid device names."""
     pass
 
+class VariableError(SlowControlError):
+    """Exception raised for invalid variable values."""
+    pass
+
 class DeviceController(ABC):
 
     @abstractmethod

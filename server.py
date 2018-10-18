@@ -257,35 +257,41 @@ class ServerController(DeviceController):
                             self.update[device] = {}
                         for key, value in values.items():
                             self.update[device][key] = value
-    
+   
+    def variables(self):
+        return {'message': str}
+
     def execute_command(self, command):
         cmd = command.command
         update = None
         if cmd == 'print_message':
-            message = command.args['message']
+            try:
+                message = command.args['message']
+            except KeyError:
+                raise CommandArgumentError("missing argument 'message'")
             if message is None:
                 raise CommandArgumentError('must be string: message')
-            update = {'message' + str(self._message_count): 
-                    command.args['message']}
+            update = {'message' + str(self._message_count): message}
             self._message_count += 1
         elif cmd == 'set_alert':
-            alert_arg_types = {'device': str, 'variable': str,
-                    'lower_limit': float, 'upper_limit': float}
             alert_args = {}
-            for arg, arg_type in alert_arg_types.items():
+            # Parse arguments
+            for arg in ['device', 'variable', 'lower_limit', 'upper_limit']:
                 try:
-                    value = command.args[arg]
+                    alert_args[arg] = command.args[arg]
                 except KeyError:
-                    raise CommandArgumentError('missing argument {}'.format(
+                    raise CommandArgumentError("missing argument '{}'".format(
                         arg))
-                if value is None:
+                if alert_args[arg] is None:
                     raise CommandArgumentError('unspecified argument: '
                             '{}'.format(arg))
-                try:
-                    alert_args[arg] = arg_type(value)
-                except TypeError:
-                    raise CommandArgumentError('invalid type of argument: '
-                            '{}'.format(arg))
+                # Confirm limits have the correct type
+                if arg in ['lower_limit', 'upper_limit']:
+                    try:
+                        float(arg)
+                    except ValueError:
+                        raise CommandArgumentError("'{}' must be float".format(
+                            arg))
             self.alerts.append(Alert(**alert_args))
         else:
             raise CommandNameError
@@ -296,22 +302,21 @@ class ServerController(DeviceController):
         for i, alert in enumerate(self.alerts):
             alert_id = 'ALERT_{}'.format(i)
             try:
-                alert_value = self.update[alert.device][alert.variable]
-            except KeyError as e: # no value to check, skip it
-                continue
-            try:
-                alert_value = float(alert_value)
-            except ValueError as e:
-                print("Warning: could not convert {} to float to check alert".format(alert_value))
-                continue
-            if not alert.lower_limit <= alert_value <= alert.upper_limit:
-                self.update[alert_id] = {
+                variable_value = self.update[alert.device][alert.variable]
+                if not (alert.lower_limit <= float(variable_value) 
+                        <= alert.upper_limit):
+                    self.update[alert_id] = {
                         'device': alert.device,
                         'variable': alert.variable,
-                        'value': alert_value,
+                        'value': variable_value,
                         'lower_limit': alert.lower_limit,
                         'upper_limit': alert.upper_limit
                         }
+            except KeyError as e: # Variable not in update, so just skip it
+                continue
+            except ValueError:
+                raise VariableError("could not convert '{}' to float".format(
+                    variable_value))
     
     def _execute_timed_commands(self):
         for timer in self.timers:
