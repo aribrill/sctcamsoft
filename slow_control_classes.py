@@ -45,7 +45,7 @@ class CommunicationError(SlowControlError):
     
     def __init__(self, device):
         self.device = device
-        self.message = "{}: not connected".format(device)
+        self.message = "not connected"
 
 class ConfigurationError(SlowControlError):
     """Exception raised for missing or invalid configuration parameters.
@@ -54,14 +54,14 @@ class ConfigurationError(SlowControlError):
     def __init__(self, device, parameter, message):
         self.device = device
         self.parameter = parameter
-        self.message = "{}: {}: {}".format(device, parameter, message)
+        self.message = "{}: {}".format(parameter, message)
 
 class DeviceNameError(SlowControlError):
     """Exception raised for invalid device names."""
 
     def __init__(self, device):
         self.device = device
-        self.message = "{}: invalid device".format(device)
+        self.message = "invalid device"
 
 class VariableError(SlowControlError):
     """Exception raised for invalid variable values."""
@@ -70,7 +70,7 @@ class VariableError(SlowControlError):
         self.device = device
         self.variable = variable
         self.value = value
-        self.message = "{}: {}: {}: {}".format(device, variable, value, message)
+        self.message = "{}: {}: {}".format(variable, value, message)
 
 class DeviceController(ABC):
 

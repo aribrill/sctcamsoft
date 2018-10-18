@@ -103,7 +103,7 @@ class ServerController(DeviceController):
                 self.device_controllers[device] = controller(device,
                         config.get(device, {}))
         except ConfigurationError as e:
-            print('Fatal Configuration Error:')
+            print('Fatal configuration error in device:', e.device)
             print(e.message)
             print("Shutting down.")
             sys.exit()
@@ -275,6 +275,7 @@ class ServerController(DeviceController):
                         raise CommandArgumentError('server', cmd, arg,
                                 "argument must be float")
             self.alerts.append(Alert(**alert_args))
+            update = ('alert_set', alert_args['name'])
         else:
             raise CommandNameError('server', cmd)
         
