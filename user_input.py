@@ -55,6 +55,10 @@ def parse_and_serialize_user_input(raw_user_input):
 
 # Start a terminal for user input
 print("SCT Slow Control - Input")
+print("Type 'startup' to prepare camera for operation (Operations Manual sec. "
+        "5.1 and 5.2). When everything is connected and on, type 'start_HV' "
+        "to turn on HV, and 'stop_HV' to turn it off. When done taking data, "
+        "type 'shutdown' to prepare camera for shutdown (Manual sec. 6.1).")
 # Identify self to server
 while True:
     raw_user_input = input('> ')
