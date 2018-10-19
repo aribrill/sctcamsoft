@@ -12,6 +12,7 @@ import yaml
 
 from slow_control_classes import *
 from fan_control import FanController
+from network_control import NetworkController
 from power_control import PowerController
 import slow_control_pb2 as sc
 
@@ -240,7 +241,13 @@ class ServerController(DeviceController):
                 device_update = device_controller.execute_command(dc)
                 # Add device update to rest of the updates
                 if device_update is not None:
-                    self.updates.append((dc.device,) + device_update)
+                    update = (dc.device,) + device_update
+                    try:
+                        update = (str(u) for u in update)
+                    except ValueError:
+                        raise VariableError(*update,
+                                "could not convert to string for update")
+                    self.updates.append(update)
    
     def execute_command(self, command):
         cmd = command.command
@@ -339,6 +346,7 @@ with open(args.commands_file, 'r') as commands_file:
 devices = {
 #       'server': ServerController --> automatically included as self
         'fan': FanController,
+        'network': NetworkController,
         'power': PowerController
         }
 server = ServerController('server', config, user_commands, devices)

@@ -28,6 +28,7 @@
 # Low level commands
 fan:open_connection: {device: fan, command: open_connection}
 fan:close_connection: {device: fan, command: close_connection}
+fan:check_connection: {device: fan, command: check_connection}
 fan:turn_on: {device: fan, command: turn_on}
 fan:turn_off: {device: fan, command: turn_off}
 fan:read_voltage: {device: fan, command: read_voltage}
@@ -52,6 +53,10 @@ power:read_HV_measured_voltage:
 power:read_HV_nominal_voltage:
     device: power
     command: read_HV_nominal_voltage
+check_interface_activity:
+    device: network
+    command: check_interface_activity
+    args: {interface: null}
 print:
     device: server
     command: print_message

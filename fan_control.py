@@ -27,6 +27,13 @@ class FanController(DeviceController):
             except KeyError:
                 raise ConfigurationError(self.device, setting,
                         "missing configuration parameter")
+        try:
+            if self._telnet_settings['timeout'] is not None:
+                self._telnet_settings['timeout'] = float(
+                        self._telnet_settings['timeout'])
+        except ValueError:
+            raise ConfigurationError(self.device, 'timeout',
+                    "must be a number or None")
         self._ser = None
 
     def _open_connection(self):

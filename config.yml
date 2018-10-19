@@ -11,6 +11,9 @@ fan:
     port: 12347
     timeout: 5
 
+network:
+    timeout: 2
+
 power:
     ip: ''
     MIB_list_path: ''
