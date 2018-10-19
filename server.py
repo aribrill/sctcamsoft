@@ -194,13 +194,34 @@ class ServerController(DeviceController):
             # Begin mode to list commands to repeatedly execute later
             if dc.device is None and dc.command == 'enter_repeat_mode':
                 if repeat_depth == 0: # This is the first nested repeat
-                    n_executions = dc.args['n_executions']
-                    if n_executions is not None:
-                        n_executions = int(n_executions)
+                    try:
+                        interval = dc.args['interval']
+                        if interval is None:
+                            raise KeyError
+                        interval = float(interval)
+                    except KeyError:
+                        raise CommandArgumentError(self.device, dc.command,
+                                'interval', "missing argument")
+                    except ValueError:
+                        raise CommandArgumentError(self.device, dc.command,
+                                'interval', "must be float")
+                    try:
+                        n_executions = dc.args.get('n_executions')
+                        if n_executions is not None:
+                            n_executions = int(n_executions)
+                    except ValueError:
+                        raise CommandArgumentError(self.device, dc.command,
+                                'n_executions', "must be integer or None")
+                    try:
+                        execute_immediately = dc.args.get('execute_immediately')
+                        execute_immediately = bool(execute_immediately)
+                    except ValueError:
+                        raise CommandArgumentError(self.device, dc.command,
+                                'execute_immediately', "must be Boolean")
                     repeat_params = RepeatParams(
-                            interval=float(dc.args['interval']),
+                            interval=interval,
                             n_executions=n_executions,
-                            execute_immediately=dc.args['execute_immediately'])
+                            execute_immediately=execute_immediately)
                 else:
                     repeat_cmds.append(dc)
                 repeat_depth += 1
@@ -243,7 +264,7 @@ class ServerController(DeviceController):
                 if device_update is not None:
                     update = (dc.device,) + device_update
                     try:
-                        update = (str(u) for u in update)
+                        update = tuple([str(u) for u in update])
                     except ValueError:
                         raise VariableError(*update,
                                 "could not convert to string for update")

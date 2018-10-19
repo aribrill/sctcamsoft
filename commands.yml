@@ -37,8 +37,8 @@ power:turn_on_main_switch: {device: power, command: turn_on_main_switch}
 power:turn_off_main_switch: {device: power, command: turn_off_main_switch}
 power:start_supply: {device: power, command: start_supply}
 power:stop_supply: {device: power, command: stop_supply}
-power:start_HV: {device: power, command: start_HV}
-power:stop_HV: {device: power, command: stop_HV}
+start_HV: {device: power, command: start_HV}
+stop_HV: {device: power, command: stop_HV}
 power:read_supply_current: {device: power, command: read_supply_current}
 power:read_supply_measured_voltage:
     device: power
@@ -87,46 +87,30 @@ exit_repeat_mode:
 
 # High level commands (composed of multiple low level commands)
 
-monitor:
+startup:
     command_list:
-        - set_alert  # fan voltage
-        - set_alert  # fan current
-        - set_alert  # main power supply current
-        - set_alert  # HV current
-        - enter_repeat_mode
-        - fan:read_voltage
-        - fan:read_current
-        - power:read_supply_current
-        - power:read_HV_current
-        - exit_repeat_mode
-    args:
-        alert1_name: {index: 0, arg: name, val: 'fan_voltage'}
-        alert1_device: {index: 0, arg: device, val: fan}
-        alert1_variable: {index: 0, arg: variable, val: voltage}
-        alert1_lower_limit: {index: 0, arg: lower_limit, val: 23}  # V
-        alert1_upper_limit: {index: 0, arg: upper_limit, val: 25}  # V
-        alert2_name: {index: 1, arg: name, val: 'fan_current'}
-        alert2_device: {index: 1, arg: device, val: fan}
-        alert2_variable: {index: 1, arg: variable, val: current}
-        alert2_lower_limit: {index: 1, arg: lower_limit, val: 14}  # A
-        alert2_upper_limit: {index: 1, arg: upper_limit, val: 16}  # A
-        alert3_name: {index: 2, arg: name, val: 'power_supply_current'}
-        alert3_device: {index: 2, arg: device, val: power}
-        alert3_variable: {index: 2, arg: variable, val: supply_current}
-        alert3_lower_limit: {index: 2, arg: lower_limit, val: 0}  # A
-        alert3_upper_limit: {index: 2, arg: upper_limit, val: 4}  # A
-        alert4_name: {index: 3, arg: name, val: 'HV_current'}
-        alert4_device: {index: 3, arg: device, val: power}
-        alert4_variable: {index: 3, arg: variable, val: HV_current}
-        alert4_lower_limit: {index: 3, arg: lower_limit, val: 0}  # A
-        alert4_upper_limit: {index: 3, arg: upper_limit, val: 1}  # A
-        repeat_interval: {index: 4, arg: interval, val: 30}
-        n_executions: {index: 4, arg: n_executions, val: null}
-        execute_immediately: {index: 4, arg: execute_immediately, val: true}
+        - connect_devices
+        - set_alerts
+        - set_monitoring
+        - start_fans
+        - start_camera_power
+
+shutdown:
+    command_list:
+        - stop_camera_power
+        - stop_fans
+        - disconnect_devices
+
+connect_devices:
+    command_list:
+        - fan:open_connection
+
+disconnect_devices:
+    command_list:
+        - fan:close_connection
 
 start_fans:
     command_list:
-        - fan:open_connection
         - fan:turn_on
         - fan:read_current
         - fan:read_voltage
@@ -136,9 +120,8 @@ stop_fans:
         - fan:turn_off
         - fan:read_current
         - fan:read_voltage
-        - fan:close_connection
 
-power_on_camera:
+start_camera_power:
     command_list:
         - power:turn_on_main_switch
         - power:start_supply
@@ -146,13 +129,142 @@ power_on_camera:
         - power:read_supply_measured_voltage
         - power:read_supply_current
 
-power_off_camera:
+stop_camera_power:
     command_list:
         - power:stop_supply
         - power:turn_off_main_switch
         - power:read_supply_nominal_voltage
         - power:read_supply_measured_voltage
         - power:read_supply_current
+
+set_alerts:
+    command_list:
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+        - set_alert
+
+    args:
+        # Fan connection, voltage, and current
+        0_name: {index: 0, arg: name, val: fan_connection}
+        0_device: {index: 0, arg: device, val: fan}
+        0_variable: {index: 0, arg: variable, val: connection}
+        0_lower_limit: {index: 0, arg: lower_limit, val: 1}  # connected
+        0_upper_limit: {index: 0, arg: upper_limit, val: 1}
+        1_name: {index: 1, arg: name, val: fan_voltage}
+        1_device: {index: 1, arg: device, val: fan}
+        1_variable: {index: 1, arg: variable, val: voltage}
+        1_lower_limit: {index: 1, arg: lower_limit, val: 23}  # V
+        1_upper_limit: {index: 1, arg: upper_limit, val: 25}
+        2_name: {index: 2, arg: name, val: fan_current}
+        2_device: {index: 2, arg: device, val: fan}
+        2_variable: {index: 2, arg: variable, val: current}
+        2_lower_limit: {index: 2, arg: lower_limit, val: 14}  # A
+        2_upper_limit: {index: 2, arg: upper_limit, val: 16}
+
+        # Network connection and activity on module interfaces
+        3_name: {index: 3, arg: name, val: eth6_connection}
+        3_device: {index: 3, arg: device, val: network}
+        3_variable: {index: 3, arg: variable, val: eth6}
+        3_lower_limit: {index: 3, arg: lower_limit, val: 0}  # num packets
+        3_upper_limit: {index: 3, arg: upper_limit, val: .inf}
+        4_name: {index: 4, arg: name, val: eth6_activity}
+        4_device: {index: 4, arg: device, val: network}
+        4_variable: {index: 4, arg: variable, val: eth6}
+        4_lower_limit: {index: 4, arg: lower_limit, val: 1}  # num packets
+        4_upper_limit: {index: 4, arg: upper_limit, val: .inf}
+        5_name: {index: 5, arg: name, val: eth7_connection}
+        5_device: {index: 5, arg: device, val: network}
+        5_variable: {index: 5, arg: variable, val: eth7}
+        5_lower_limit: {index: 5, arg: lower_limit, val: 0}  # num packets
+        5_upper_limit: {index: 5, arg: upper_limit, val: .inf}
+        6_name: {index: 6, arg: name, val: eth7_activity}
+        6_device: {index: 6, arg: device, val: network}
+        6_variable: {index: 6, arg: variable, val: eth7}
+        6_lower_limit: {index: 6, arg: lower_limit, val: 1}  # num packets
+        6_upper_limit: {index: 6, arg: upper_limit, val: .inf}
+        7_name: {index: 7, arg: name, val: eth8_connection}
+        7_device: {index: 7, arg: device, val: network}
+        7_variable: {index: 7, arg: variable, val: eth8}
+        7_lower_limit: {index: 7, arg: lower_limit, val: 0}  # num packets
+        7_upper_limit: {index: 7, arg: upper_limit, val: .inf}
+        8_name: {index: 8, arg: name, val: eth8_activity}
+        8_device: {index: 8, arg: device, val: network}
+        8_variable: {index: 8, arg: variable, val: eth8}
+        8_lower_limit: {index: 8, arg: lower_limit, val: 1}  # num packets
+        8_upper_limit: {index: 8, arg: upper_limit, val: .inf}
+        9_name: {index: 9, arg: name, val: eth9_connection}
+        9_device: {index: 9, arg: device, val: network}
+        9_variable: {index: 9, arg: variable, val: eth9}
+        9_lower_limit: {index: 9, arg: lower_limit, val: 0}  # num packets
+        9_upper_limit: {index: 9, arg: upper_limit, val: .inf}
+        10_name: {index: 10, arg: name, val: eth9_activity}
+        10_device: {index: 10, arg: device, val: network}
+        10_variable: {index: 10, arg: variable, val: eth9}
+        10_lower_limit: {index: 10, arg: lower_limit, val: 1}  # num packets
+        10_upper_limit: {index: 10, arg: upper_limit, val: .inf}
+
+        # Power main supply and HV current
+        11_name: {index: 11, arg: name, val: power_supply_current}
+        11_device: {index: 11, arg: device, val: power}
+        11_variable: {index: 11, arg: variable, val: supply_current}
+        11_lower_limit: {index: 11, arg: lower_limit, val: 0}  # A
+        11_upper_limit: {index: 11, arg: upper_limit, val: 4}
+        12_name: {index: 12, arg: name, val: HV_current}
+        12_device: {index: 12, arg: device, val: power}
+        12_variable: {index: 12, arg: variable, val: HV_current}
+        12_lower_limit: {index: 12, arg: lower_limit, val: 0}  # A
+        12_upper_limit: {index: 12, arg: upper_limit, val: 1}
+
+set_monitoring:
+    command_list:
+        - enter_repeat_mode
+        - fan:check_connection
+        - fan:read_voltage
+        - fan:read_current
+        - exit_repeat_mode
+        - enter_repeat_mode
+        - check_interface_activity
+        - check_interface_activity
+        - check_interface_activity
+        - check_interface_activity
+        - exit_repeat_mode
+        - enter_repeat_mode
+        - power:read_supply_current
+        - power:read_HV_current
+        - exit_repeat_mode
+    args:
+        # Fan monitoring parameters
+        fan_interval: {index: 0, arg: interval, val: 30}
+        fan_n_executions: {index: 0, arg: n_executions, val: null}
+        fan_execute_immediately: {index: 0, arg: execute_immediately, val: true}
+        # Network monitoring parameters
+        network_interval: {index: 5, arg: interval, val: 30}
+        network_n_executions: {index: 5, arg: n_executions, val: null}
+        network_execute_immediately:
+            index: 5
+            arg: execute_immediately
+            val: true
+        eth6: {index: 6, arg: interface, val: eth6}
+        eth7: {index: 7, arg: interface, val: eth7}
+        eth8: {index: 8, arg: interface, val: eth8}
+        eth9: {index: 9, arg: interface, val: eth9}
+        # Power monitoring parameters
+        power_interval: {index: 11, arg: interval, val: 30}
+        power_n_executions: {index: 11, arg: n_executions, val: null}
+        power_execute_immediately:
+            index: 11
+            arg: execute_immediately
+            val: true
 
 test_server:
     command_list:

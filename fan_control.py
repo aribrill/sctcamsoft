@@ -75,7 +75,7 @@ class FanController(DeviceController):
         elif cmd == "close_connection":
             self._close_connection()
         elif cmd == "check_connection":
-            update = ('connected', self._ser is not None)
+            update = ('connected', int(self._ser is not None))
         elif cmd == "turn_on":
             self._send_cmd("PWR ON")
             time.sleep(SLEEP_SECS)
