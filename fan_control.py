@@ -2,15 +2,12 @@
 
 # Telnet protocol follows example at http://www.pythonforbeginners.com/code-snippets-source-code/python-using-telnet
 # Another useful example: https://docs.python.org/2/library/telnetlib.html
-# protocol provided to FAN constructor should be 'serial' or (default) 'telnet'
-# Telnet supported added May 27 2018 by Justin Vandenbroucke
+# Telnet supported added to FAN class May 27 2018 by Justin Vandenbroucke
 # Modified for DeviceController class and Python 3 Aug 14 2018 by Ari Brill
 
 import socket
 import telnetlib
 import time
-
-import serial
 
 from slow_control_classes import *
 
