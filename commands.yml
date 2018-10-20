@@ -89,8 +89,8 @@ exit_repeat_mode:
 
 startup:
     command_list:
-        - connect_devices
         - set_alerts
+        - connect_devices
         - set_monitoring
         - start_fans
         - start_camera_power
