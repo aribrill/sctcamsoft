@@ -45,7 +45,7 @@ class NetworkController(DeviceController):
             except ValueError:
                 # tcpdump returned an error -> interface not connected
                 num_packets = -1
-            update = (interface, num_packets)
+            update = (self.device, interface, num_packets)
         else:
             raise CommandNameError(self.device, cmd)
         return update

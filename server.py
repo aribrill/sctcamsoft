@@ -262,13 +262,13 @@ class ServerController(DeviceController):
                 device_update = device_controller.execute_command(dc)
                 # Add device update to rest of the updates
                 if device_update is not None:
-                    update = (dc.device,) + device_update
                     try:
-                        update = tuple([str(u) for u in update])
+                        # Ensure everything is a string
+                        device_update = tuple([str(u) for u in device_update])
                     except ValueError:
-                        raise VariableError(*update,
+                        raise VariableError(*device_update,
                                 "could not convert to string for update")
-                    self.updates.append(update)
+                    self.updates.append(device_update)
    
     def execute_command(self, command):
         cmd = command.command
@@ -281,7 +281,7 @@ class ServerController(DeviceController):
             except KeyError:
                 raise CommandArgumentError(self.device, cmd, 'message',
                         "missing argument")
-            update = ('message', message)
+            update = (self.device, 'message', message)
         elif cmd == 'set_alert':
             alert_args = {}
             # Parse arguments
@@ -303,7 +303,7 @@ class ServerController(DeviceController):
                         raise CommandArgumentError('server', cmd, arg,
                                 "argument must be float")
             self.alerts.append(Alert(**alert_args))
-            update = ('alert_set', alert_args['name'])
+            update = (self.device, 'alert_set', alert_args['name'])
         else:
             raise CommandNameError('server', cmd)
         
