@@ -10,13 +10,13 @@ class NetworkController(DeviceController):
     def __init__(self, device, config):
         self.device = device
         try:
-            self.timeout = float(config['timeout'])
+            self.timeout = int(config['timeout'])
         except KeyError:
             raise ConfigurationError(self.device, 'timeout',
                     "missing configuration parameter")
         except ValueError:
             raise ConfigurationError(self.device, 'timeout',
-                    "must be a number")
+                    "must be an integer")
 
     def _construct_tcpdump_command(self, interface):
         cmd = ("timeout " + str(self.timeout) + " tcpdump -p -i " + interface
