@@ -12,6 +12,7 @@ import traceback
 import yaml
 
 from mock_fan_control import FanController
+from mock_network_control import NetworkController
 from mock_power_control import PowerController
 
 from server import ServerController
@@ -31,7 +32,7 @@ def main():
     devices = {
     #       'server': ServerController --> automatically included as self
             'fan': FanController,
-            # 'network': NetworkController,
+            'network': NetworkController,
             'power': PowerController
             }
     server = ServerController('server', config, user_commands, devices)
