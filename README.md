@@ -21,3 +21,6 @@ In the user input terminal, type in commands and arguments as defined in command
 Control and monitoring is available for three devices: camera fans, camera power, and network connection. See commands.yml for a complete list of supported commands. It is possible to set alerts for any numerical monitoring variable.
 
 The slow control software provides high-level commands to automate normal camera operation. Type `startup` to prepare camera for operation (Operations Manual sec. 5.1 and 5.2). When everything is connected and on, type `start_HV` to turn on HV, and `stop_HV` to turn it off. When done taking data, type `shutdown` to prepare camera for shutdown (Manual sec. 6.1).
+
+
+## GUI
