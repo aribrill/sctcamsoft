@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from slow_control_classes import *
+from random_signal import RandomSignal
 
 class NetworkController(DeviceController):
 
@@ -18,7 +19,7 @@ class NetworkController(DeviceController):
             raise ConfigurationError(self.device, 'timeout',
                     "must be an integer")
 
-        self._network_activity = 0
+        self._network_activity_sig = RandomSignal(200, 100, 0)
 
     def execute_command(self, command):
         cmd = command.command
@@ -33,7 +34,7 @@ class NetworkController(DeviceController):
                 raise CommandArgumentError(self.device, cmd, 'interface',
                         "argument not specified")
             
-            num_packets = 3
+            num_packets = int(max(self._network_activity_sig.read(), 0))
             update = (self.device, interface, num_packets)
         else:
             raise CommandNameError(self.device, cmd)
