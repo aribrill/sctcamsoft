@@ -6,6 +6,7 @@ import telnetlib
 import time
 
 from slow_control_classes import *
+from random_signal import RandomSignal
 
 SLEEP_SECS = 3
 
@@ -32,8 +33,9 @@ class FanController(DeviceController):
 
         self._isconnected = False
         self._is_on = False
-        self._voltage = -1
-        self._current = -1
+        self._voltage_sig = RandomSignal(20, 1)
+        self._current_sig = RandomSignal(1.5, 0.25)
+        self._zero_sig = RandomSignal(0, 0.01)
 
     def _open_connection(self):
         self._isconnected = True
@@ -58,19 +60,21 @@ class FanController(DeviceController):
             update = (self.device, 'connected', int(self._isconnected))
         elif cmd == "turn_on":
             self._is_on = True
-            self._voltage = 12.0
-            self._current = 2.0
             time.sleep(SLEEP_SECS)
         elif cmd == "turn_off":
             self._is_on = False
-            self._voltage = 0.0
-            self._current = 0.0
             time.sleep(SLEEP_SECS)
         elif cmd == "read_voltage":
-            voltage = self._voltage
+            if (self._is_on):
+                voltage = self._voltage_sig.read()
+            else: 
+                voltage = self._zero_sig.read()
             update = (self.device, 'voltage', voltage)
         elif cmd == "read_current":
-            current = self._current
+            if (self._is_on):
+                current = self._current_sig.read() 
+            else:
+                current = self._zero_sig.read()
             update = (self.device, 'current', current)
         else:
             raise CommandNameError(self.device, cmd)
