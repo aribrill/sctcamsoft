@@ -1,0 +1,22 @@
+fan:
+    is_connected: false
+    fans_on: false
+    voltage: 24.0
+    current: 15.0
+    noisy_signal: true
+
+network:
+    avg_packet_number: 200
+    noisy_count: true
+
+power:
+    main_switch_on: true
+    supply_on: false
+    high_voltage_on: false
+    supply_current: 2.0
+    supply_nominal_voltage:  70.0
+    supply_measured_voltage: 70.0
+    hv_current: 0.5
+    hv_nominal_voltage: 70.0
+    hv_measured_voltage: 70.0 
+    noisy_signal: true

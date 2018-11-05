@@ -1,4 +1,5 @@
 from slow_control_classes import *
+from hardware_state_helpers import *
 
 from random_signal import RandomSignal
 
@@ -17,20 +18,32 @@ class PowerController(DeviceController):
             raise ConfigurationError(self.device, 'MIB_list_path',
                     "missing configuration parameter")
 
-        self._is_main_switch_on = False
-        self._is_supply_on = False
-        self._is_high_voltage_on = False
+        hw_state = get_device_state(device)
 
-        self._zero_signal = RandomSignal(0, 0.01)
+        self._is_main_switch_on = hw_state['main_switch_on']
+        self._is_supply_on = hw_state['supply_on']
+        self._is_high_voltage_on = hw_state['high_voltage_on']
 
-        self._supply_current_sig = RandomSignal(2.0, 0.1)
-        self._supply_nominal_voltage = 70.0
-        self._supply_measured_voltage_sig = RandomSignal(self._supply_nominal_voltage, 1.5)
+        add_noise = hw_state['noisy_signal']
+
+        self._zero_signal = RandomSignal(0, 0.01 if add_noise else 0.0)
+
+        self._supply_current_sig = RandomSignal(
+            hw_state['supply_current'], 
+            0.2 if add_noise else 0.0)
+        self._supply_nominal_voltage = hw_state['supply_nominal_voltage']
+        self._supply_measured_voltage_sig = RandomSignal(
+            hw_state['supply_measured_voltage'], 
+            1 if add_noise else 0)
+
+        self._hv_current_sig = RandomSignal(
+            hw_state['hv_current'], 
+            0.1 if add_noise else 0.0)
+        self._hv_nominal_voltage = hw_state['hv_nominal_voltage']
+        self._hv_measured_voltage_sig = RandomSignal(
+            hw_state['hv_measured_voltage'], 
+            1 if add_noise else 0)
         
-        self._hv_current_sig = RandomSignal(2.0, 0.1)
-        self._hv_nominal_voltage = 70.0
-        self._hv_measured_voltage_sig = RandomSignal(self._hv_nominal_voltage, 1.5)
-
     def execute_command(self, command):
         cmd = command.command
         if cmd == 'turn_on_main_switch':

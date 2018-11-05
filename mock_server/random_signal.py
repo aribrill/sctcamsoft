@@ -21,3 +21,4 @@ class RandomSignal():
     def _computeRandVals(self):
         num_values = 100
         self._values = random.normal(self._mean, self._stdev, num_values)
+        self._nextIndex = 0
