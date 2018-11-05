@@ -1,12 +1,10 @@
-import sys
-sys.path.append("..")
-
 import socket
 import telnetlib
 import time
 
 from slow_control_classes import *
 from random_signal import RandomSignal
+from hardware_state_helpers import *
 
 SLEEP_SECS = 3
 
@@ -30,12 +28,14 @@ class FanController(DeviceController):
             raise ConfigurationError(self.device, 'timeout',
                     "must be a number or None")
 
+        hw_state = get_device_state(device)
+        add_noise = hw_state['noisy_signal']
 
-        self._isconnected = False
-        self._is_on = False
-        self._voltage_sig = RandomSignal(20, 1)
-        self._current_sig = RandomSignal(1.5, 0.25)
-        self._zero_sig = RandomSignal(0, 0.01)
+        self._isconnected = hw_state['is_connected']
+        self._is_on = hw_state['fans_on']
+        self._voltage_sig = RandomSignal(hw_state['voltage'], 0.7 if add_noise else 0)
+        self._current_sig = RandomSignal(hw_state['current'], 0.5 if add_noise else 0)
+        self._zero_sig =RandomSignal(0, 0.01 if add_noise else 0.0)
 
     def _open_connection(self):
         self._isconnected = True
