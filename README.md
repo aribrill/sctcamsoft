@@ -24,4 +24,4 @@ The slow control software provides high-level commands to automate normal camera
 
 
 ## GUI
-Test 3:49
+Test 9:29
