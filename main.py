@@ -45,13 +45,31 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
 
     def Temp_show(self):
         dr = Figure_Canvas(Figure(figsize=(5, 5), dpi=110))
-        data = np.random.random(size=(5, 5))
-        dr.test(data)
+        data1 = np.random.random(size=(5, 5))
+        dr.test(data1)
         dr.fig.colorbar(dr.im)  # fig.colorbar must have a image name
         graphicscene = QtWidgets.QGraphicsScene()
         graphicscene.addWidget(dr)
         self.graphicsView.setScene(graphicscene)
         self.graphicsView.show()
+
+        dr2 = Figure_Canvas(Figure(figsize=(5, 5), dpi=110))
+        data2 = np.random.random(size=(5, 5))
+        dr2.test(data2)
+        dr2.fig.colorbar(dr2.im)  # fig.colorbar must have a image name
+        graphicscene = QtWidgets.QGraphicsScene()
+        graphicscene.addWidget(dr2)
+        self.graphicsView_2.setScene(graphicscene)
+        self.graphicsView_2.show()
+
+        dr3 = Figure_Canvas(Figure(figsize=(5, 5), dpi=110))
+        data3 = np.random.random(size=(5, 5))
+        dr3.test(data3)
+        dr3.fig.colorbar(dr3.im)  # fig.colorbar must have a image name
+        graphicscene = QtWidgets.QGraphicsScene()
+        graphicscene.addWidget(dr3)
+        self.graphicsView_3.setScene(graphicscene)
+        self.graphicsView_3.show()
 
 
 app = QtWidgets.QApplication(sys.argv)  
