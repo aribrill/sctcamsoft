@@ -27,24 +27,14 @@ class Figure_Canvas(FigureCanvas): #https://matplotlib.org/users/artists.html
        self.data = data
        self.im=self.axes.imshow(data,interpolation='nearest')
 
-class mywindow(QtWidgets.QWidget,Ui_Dialog):
-    def __init__(self):      
-        super(mywindow,self).__init__()      
-        self.setupUi(self)
-
-    def Fans_on(self):
-        user_input.send_command('start_fans')
-
-    def Fans_off(self):
-        user_input.send_command('stop_fans')
-
-    def Camera_power_on(self):
-        user_input.send_command('start_camera_power')
-    def Camera_power_off(self):
-        user_input.send_command('stop_camera_power')
-
-    def Temp_show(self):
-        dr = Figure_Canvas(Figure(figsize=(5, 5), dpi=110))
+class Module():
+    def __init__(self, length, width, dpi):
+        self.length=length
+        self.width = width
+        self.dpi = dpi
+    def currents_update(self):
+    #    dr = Figure_Canvas(Figure(figsize=(self.length, self.width), dpi=self.dpi))
+        dr = Figure_Canvas(Figure(figsize=(5,5), dpi=100))
         data1 = np.random.random(size=(5, 5))
         dr.test(data1)
         dr.fig.colorbar(dr.im)  # fig.colorbar must have a image name
@@ -53,26 +43,36 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
         self.graphicsView.setScene(graphicscene)
         self.graphicsView.show()
 
-        dr2 = Figure_Canvas(Figure(figsize=(5, 5), dpi=110))
-        data2 = np.random.random(size=(5, 5))
-        dr2.test(data2)
-        dr2.fig.colorbar(dr2.im)  # fig.colorbar must have a image name
-        graphicscene = QtWidgets.QGraphicsScene()
-        graphicscene.addWidget(dr2)
-        self.graphicsView_2.setScene(graphicscene)
-        self.graphicsView_2.show()
+class Fans():
+    def __init__(self):
+        pass
+    def Fans_on(self):
+        user_input.send_command('start_fans')
+    def Fans_off(self):
+        user_input.send_command('stop_fans')
 
-        dr3 = Figure_Canvas(Figure(figsize=(5, 5), dpi=110))
-        data3 = np.random.random(size=(5, 5))
-        dr3.test(data3)
-        dr3.fig.colorbar(dr3.im)  # fig.colorbar must have a image name
-        graphicscene = QtWidgets.QGraphicsScene()
-        graphicscene.addWidget(dr3)
-        self.graphicsView_3.setScene(graphicscene)
-        self.graphicsView_3.show()
+class Camera_power():
+    def __init__(self):
+        pass
+    def Camera_power_on(self):
+        user_input.send_command('start_camera_power')
+    def Camera_power_off(self):
+        user_input.send_command('stop_camera_power')
 
 
-app = QtWidgets.QApplication(sys.argv)  
+class mywindow(QtWidgets.QWidget,Ui_Dialog,Module,Fans,Camera_power):
+    def __init__(self):
+        super(mywindow,self).__init__()  #parent class QWidget
+        self.setupUi(self)
+        # # signal connect
+        self.pushButton.clicked.connect(self.currents_update) #update
+        self.pushButton_2.clicked.connect(self.Fans_on)
+        self.pushButton_3.clicked.connect(self.Fans_off)
+        self.pushButton_4.clicked.connect(self.Camera_power_on)
+        self.pushButton_5.clicked.connect(self.Camera_power_off)
+
+
+app = QtWidgets.QApplication(sys.argv)
 window = mywindow()
 window.show()
 sys.exit(app.exec_())

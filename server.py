@@ -57,6 +57,7 @@ class UserHandler():
             user_command.ParseFromString(serialized_message)
             self.user_command = UserCommand(user_command.command,
                     dict(user_command.args))
+            print (user_command)
         else:
             self.selector.unregister(conn)
             conn.close()

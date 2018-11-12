@@ -153,11 +153,6 @@ class Ui_Dialog(object):
         self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
-        # signal connect
-        self.pushButton_2.clicked.connect(Dialog.Fans_on)
-        self.pushButton_3.clicked.connect(Dialog.Fans_off)
-        self.pushButton_3.clicked.connect(Dialog.Fans_off)
-        self.pushButton.clicked.connect(Dialog.Temp_show)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
