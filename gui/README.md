@@ -1,1 +1,2 @@
-test 4:07
+# sct-slow-control GUI
+## This is a readme file!
