@@ -25,7 +25,6 @@ from server_io import ServerIO
 from fan_controls import FanControls
 from power_controls import PowerControls
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Path to slow control config file')
 parser.add_argument('commands_file', help='Path to slow control commands file')
@@ -101,15 +100,6 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
                                         commands)
         self._server_handler.start()
         self.send_command.connect(self._server_handler.send_command)
-
-        user_input.send_command('connect_devices')
-        user_input.send_command('set_monitoring')  
-        # user_input.send_command('set_alerts')        
-      
-        self.fan = FanController(
-            self.pushButton_2, self.pushButton_3,
-            self.lineEdit_3, self.lineEdit_4, self.fanAlertLineEdit)
-        self._server_listener.register_observer(self.fan)
 
         self.Module1=Module(5,5,100,self.pushButton,self.graphicsView,self.graphicsView_2,self.graphicsView_3)
 
