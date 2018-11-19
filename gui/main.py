@@ -30,25 +30,48 @@ class Figure_Canvas(FigureCanvas): #https://matplotlib.org/users/artists.html
         FigureCanvas.__init__(self, self.fig)  # initialize father class
         self.axes = self.fig.add_subplot(1, 1,1)  # call add_subplot method in figure，(similiar to subplot method in matplotlib.pyplot)
 
-   def test(self,data):
+   def display(self,data): #show 2-D data
        self.data = data
        self.im=self.axes.imshow(data,interpolation='nearest')
 
 class Module():
-    def __init__(self, length, width, dpi):
+    def __init__(self, length, width, dpi, button,gView1,gView2,gView3):
         self.length=length
         self.width = width
         self.dpi = dpi
-    def currents_update(self):
-    #    dr = Figure_Canvas(Figure(figsize=(self.length, self.width), dpi=self.dpi))
-        dr = Figure_Canvas(Figure(figsize=(5,5), dpi=100))
+        self.button=button
+        self.gView1 = gView1
+        self.gView2 = gView2
+        self.gView3 = gView3
+        self.button.clicked.connect(self.Currents_update)
+        self.button.clicked.connect(self.Voltage_update)
+    def Currents_update(self):
+        dr = Figure_Canvas(Figure(figsize=(self.length, self.width), dpi=self.dpi))
         data1 = np.random.random(size=(5, 5))
-        dr.test(data1)
+        dr.display(data1)
         dr.fig.colorbar(dr.im)  # fig.colorbar must have a image name
         graphicscene = QtWidgets.QGraphicsScene()
         graphicscene.addWidget(dr)
-        self.graphicsView.setScene(graphicscene)
-        self.graphicsView.show()
+        self.gView1.setScene(graphicscene)
+        self.gView1.show()
+    def Voltage_update(self):
+        dr = Figure_Canvas(Figure(figsize=(self.length, self.width), dpi=self.dpi))
+        data1 = np.random.random(size=(5, 5))
+        dr.display(data1)
+        dr.fig.colorbar(dr.im)  # fig.colorbar must have a image name
+        graphicscene = QtWidgets.QGraphicsScene()
+        graphicscene.addWidget(dr)
+        self.gView2.setScene(graphicscene)
+        self.gView2.show()
+    def Temp_update(self):
+        dr = Figure_Canvas(Figure(figsize=(self.length, self.width), dpi=self.dpi))
+        data1 = np.random.random(size=(5, 5))
+        dr.display(data1)
+        dr.fig.colorbar(dr.im)  # fig.colorbar must have a image name
+        graphicscene = QtWidgets.QGraphicsScene()
+        graphicscene.addWidget(dr)
+        self.gView3.setScene(graphicscene)
+        self.gView3.show()
 
 class ServerListener(QThread):
     def __init__(self, host, output_port):
@@ -138,6 +161,7 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
             self.lineEdit_3, self.lineEdit_4, self.fanAlertLineEdit)
         self._server_listener.register_observer(self.fan)
 
+        self.Module1=Module(5,5,100,self.pushButton,self.graphicsView,self.graphicsView_2,self.graphicsView_3)
 
 
 app = QtWidgets.QApplication(sys.argv)
