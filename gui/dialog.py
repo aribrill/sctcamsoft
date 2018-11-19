@@ -37,7 +37,7 @@ class Ui_Dialog(object):
         self.groupBox_4.setGeometry(QtCore.QRect(570, 110, 501, 101))
         self.groupBox_4.setObjectName("groupBox_4")
         self.label_7 = QtWidgets.QLabel(self.groupBox_4)
-        self.label_7.setGeometry(QtCore.QRect(400, 20, 51, 32))
+        self.label_7.setGeometry(QtCore.QRect(410, 20, 81, 31))
         self.label_7.setObjectName("label_7")
         self.layoutWidget_3 = QtWidgets.QWidget(self.groupBox_4)
         self.layoutWidget_3.setGeometry(QtCore.QRect(20, 50, 471, 33))
@@ -58,7 +58,7 @@ class Ui_Dialog(object):
         self.lineEdit_6.setObjectName("lineEdit_6")
         self.horizontalLayout_2.addWidget(self.lineEdit_6)
         self.label_8 = QtWidgets.QLabel(self.groupBox_4)
-        self.label_8.setGeometry(QtCore.QRect(240, 20, 51, 32))
+        self.label_8.setGeometry(QtCore.QRect(240, 20, 91, 31))
         self.label_8.setObjectName("label_8")
         self.groupBox_6 = QtWidgets.QGroupBox(Dialog)
         self.groupBox_6.setGeometry(QtCore.QRect(570, 330, 221, 71))
@@ -76,7 +76,7 @@ class Ui_Dialog(object):
         self.label_6.setGeometry(QtCore.QRect(430, 20, 51, 32))
         self.label_6.setObjectName("label_6")
         self.label_5 = QtWidgets.QLabel(self.groupBox_2)
-        self.label_5.setGeometry(QtCore.QRect(270, 20, 51, 32))
+        self.label_5.setGeometry(QtCore.QRect(280, 20, 51, 32))
         self.label_5.setObjectName("label_5")
         self.layoutWidget = QtWidgets.QWidget(self.groupBox_2)
         self.layoutWidget.setGeometry(QtCore.QRect(10, 50, 471, 33))
@@ -162,7 +162,6 @@ class Ui_Dialog(object):
         self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
-
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "pSCT"))
@@ -171,10 +170,10 @@ class Ui_Dialog(object):
         self.pushButton_6.setText(_translate("Dialog", "Open"))
         self.pushButton_7.setText(_translate("Dialog", "Close"))
         self.groupBox_4.setTitle(_translate("Dialog", "Camera power"))
-        self.label_7.setText(_translate("Dialog", "Current"))
+        self.label_7.setText(_translate("Dialog", "HV Current"))
         self.pushButton_4.setText(_translate("Dialog", "Enable"))
         self.pushButton_5.setText(_translate("Dialog", "Disable"))
-        self.label_8.setText(_translate("Dialog", "Voltage"))
+        self.label_8.setText(_translate("Dialog", "Supply Current"))
         self.groupBox_6.setTitle(_translate("Dialog", "Chiller monitor"))
         self.label_11.setText(_translate("Dialog", "Pressure"))
         self.groupBox_2.setTitle(_translate("Dialog", "Fan"))
