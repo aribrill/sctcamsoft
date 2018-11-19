@@ -23,6 +23,7 @@ from matplotlib.figure import Figure
 from dialog import Ui_Dialog
 from server_io import ServerIO
 from fan_controls import FanControls
+from power_controls import PowerControls
 
 
 parser = argparse.ArgumentParser()
@@ -87,6 +88,14 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
             self.lineEdit_3, 
             self.lineEdit_4, 
             self.fanAlertLineEdit,
+            self._server_handler.on_update,
+            self.send_command)
+
+        self.power = PowerControls(
+            self.pushButton_4,
+            self.pushButton_5,
+            self.lineEdit_5,
+            self.lineEdit_6,
             self._server_handler.on_update,
             self.send_command)
 
