@@ -17,24 +17,35 @@ class ServerIO(QThread):
         self._send_cmd_port = server_input_port
         self._recv_update_port = server_output_port
 
-        self._send_cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._send_cmd_sock.connect((host, server_input_port))
-
-        self._recv_update_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._recv_update_sock.connect((host, server_output_port))
+        self.attempt_connect_send()
+        self.attempt_connect_recv()
 
         self._commands = commands
-        
+
+    def attempt_connect_send(self):
+        self._send_cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._send_cmd_sock.connect((self._host, self._send_cmd_port))
+
+    def attempt_connect_recv(self):
+        self._recv_update_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._recv_update_sock.connect((self._host, self._recv_update_port))
+
     def run(self):
         while True:
-            serialized_message = self._recv_update_sock.recv(1024)
-            if serialized_message:
-                user_update = sc.UserUpdate()
-                user_update.ParseFromString(serialized_message)
-                for update in user_update.updates:
-                    if (update.device == 'ALERT'):
-                        print("ALERT: {}".format(update.variable))
-                    self.on_update.emit(update)
+            try:
+                serialized_message = self._recv_update_sock.recv(1024)
+                if serialized_message:
+                    user_update = sc.UserUpdate()
+                    user_update.ParseFromString(serialized_message)
+                    for update in user_update.updates:
+                        if (update.device == 'ALERT'):
+                            print("ALERT: {}".format(update.variable))
+                        self.on_update.emit(update)
+            except (socket.error, ConnectionError):
+                print('Connection to server lost.')
+                self.sleep(5)
+                # print('Attempting to reconnect to rcv socket.')
+                # self.attempt_connect_recv()
 
     @pyqtSlot(str)
     def send_command(self, command):
@@ -62,4 +73,12 @@ class ServerIO(QThread):
             message.args[user_arg] = input_value
             
         serialized_command = message.SerializeToString()
-        self._send_cmd_sock.sendall(serialized_command)
+
+        try:
+            self._send_cmd_sock.sendall(serialized_command)
+        except (socket.error, ConnectionError):
+            print('Error communicating with server.')
+            self.sleep(5)
+            # print('Attempting to reconnect to send_cmd socket.')
+            # print('cmd will not be automatically resent.')
+            # self.attempt_connect_send()

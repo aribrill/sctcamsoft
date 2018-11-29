@@ -259,7 +259,7 @@ set_monitoring:
         eth8: {index: 8, arg: interface, val: eth8}
         eth9: {index: 9, arg: interface, val: eth9}
         # Power monitoring parameters
-        power_interval: {index: 11, arg: interval, val: 30}
+        power_interval: {index: 11, arg: interval, val: 5}
         power_n_executions: {index: 11, arg: n_executions, val: null}
         power_execute_immediately:
             index: 11
