@@ -157,6 +157,9 @@ class Ui_Dialog(object):
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(570, 490, 114, 32))
         self.pushButton.setObjectName("pushButton")
+        self.checkbox = QtWidgets.QCheckBox(Dialog)
+        self.checkbox.setGeometry(QtCore.QRect(575, 520, 114, 32)) #x,y, length ,width?
+        self.checkbox.setObjectName("checkbox")
 
         self.retranslateUi(Dialog)
         self.tabWidget.setCurrentIndex(0)
@@ -191,7 +194,7 @@ class Ui_Dialog(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.Voltages), _translate("Dialog", "Voltages"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.Temp), _translate("Dialog", "Temp"))
         self.pushButton.setText(_translate("Dialog", "Update"))
-
+        self.checkbox.setText(_translate("Dialog", "Status view"))
 
 if __name__ == "__main__":
     import sys

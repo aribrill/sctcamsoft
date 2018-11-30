@@ -57,7 +57,7 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
         self.timer_1000 = QtCore.QTimer()
         self.timer_1000.start(1000)
         
-        self.Module1=Module(5,5,100,self.pushButton,self.graphicsView,self.graphicsView_2,self.graphicsView_3)
+        self.Module1=Module(5,5,100,self.pushButton,self.checkbox,self.graphicsView,self.graphicsView_2,self.graphicsView_3)
 
         # Tell the server to start sending updates
         self.send_command.emit('connect_devices')
