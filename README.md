@@ -24,4 +24,26 @@ The slow control software provides high-level commands to automate normal camera
 
 
 ## GUI
-Test 9:29
+The GUI is started via the main.py script in the gui folder. It expects the same parameters as the server itself - a config.yml and a commands.yml file. If testing locally, simply refer to the config and commands file in the repo's root folder.
+
+```
+python main.py ../config.yml ../commands.yml
+```
+
+If you're trying to test the GUI against the mock server on your own machine, reconfigure such that `host: localhost`. Run the mock server first (using the same config and commands file), then start the GUI. 
+
+## Mock SCT Slow Control Server
+This folder represents an instance of the sct-slow-control server backed by virtual hardware.
+
+### Running the Server
+Run the mock server as though it were the normal server script. If using the main `config.yml` and `commands.yml`, the call should look like this:
+```
+python mock_server.py ../config.yml ../commands.yml
+```
+
+Connect to the server using the standard `user_input.py` and `user_output.py` terminals.
+
+### Configuring the Virtual Hardware
+At startup, each mock device pulls its configuration from `mock_server/hardware_state.yml`. Here, you can set the default values of the signals returned by each "device" - currents, voltages, connection and on/off states, etc. 
+
+Many of the devices also a have "noisy_" option. Setting it to `true` will make each mocked value returned by the server vary a bit around the number defined in `hardware_state.yml`.
