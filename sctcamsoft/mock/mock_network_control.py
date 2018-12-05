@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from slow_control_classes import *
+from sctcamsoft.slow_control_classes import *
 from random_signal import RandomSignal
 from hardware_state_helpers import *
 

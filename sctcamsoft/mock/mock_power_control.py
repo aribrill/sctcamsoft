@@ -1,4 +1,4 @@
-from slow_control_classes import *
+from sctcamsoft.slow_control_classes import *
 from hardware_state_helpers import *
 
 from random_signal import RandomSignal

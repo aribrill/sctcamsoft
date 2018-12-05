@@ -9,7 +9,7 @@ import socket
 import telnetlib
 import time
 
-from slow_control_classes import *
+from sctcamsoft.slow_control_classes import *
 
 SLEEP_SECS = 3
 

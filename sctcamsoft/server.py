@@ -10,11 +10,11 @@ import traceback
 
 import yaml
 
-from slow_control_classes import *
-from fan_control import FanController
-from network_control import NetworkController
-from power_control import PowerController
-import slow_control_pb2 as sc
+from sctcamsoft.slow_control_classes import *
+from sctcamsoft.controllers.fan_control import FanController
+from sctcamsoft.controllers.network_control import NetworkController
+from sctcamsoft.controllers.power_control import PowerController
+import sctcamsoft.slow_control_pb2 as sc
 
 Alert = namedtuple('Alert', ['name', 'device', 'variable', 'lower_limit',
     'upper_limit'])

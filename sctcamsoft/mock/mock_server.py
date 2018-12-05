@@ -1,6 +1,3 @@
-import sys
-sys.path.append("../")
-
 import argparse
 from collections import namedtuple
 import selectors
@@ -11,11 +8,11 @@ import traceback
 
 import yaml
 
-from mock_fan_control import FanController
-from mock_network_control import NetworkController
-from mock_power_control import PowerController
+from sctcamsoft.mock_server.mock_fan_control import FanController
+from sctcamsoft.mock_server.mock_network_control import NetworkController
+from sctcamsoft.mock_server.mock_power_control import PowerController
 
-from server import ServerController
+from sctcamsoft.server import ServerController
     
 def main():
     parser = argparse.ArgumentParser()
