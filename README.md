@@ -2,7 +2,12 @@
 Slow control software for the CTA SCT camera. This software allows the camera operator to control and automatically monitor the SCT camera and ancillary devices.
 
 ## Installation
-Use the provided conda environment file to create an [Anaconda](https://www.anaconda.com/) environment containing all dependencies for the slow control code using the command `conda env create -f environment.yml`. Alternatively, all the dependencies as specified in that file may be installed separately. Compile the protocol buffers definition file with `protoc -I=. --python_out=. ./slow_control.proto`.
+Use the provided conda environment file to create an [Anaconda](https://www.anaconda.com/) environment containing all dependencies for the slow control code using the command `conda env create -f environment.yml`. Alternatively, all the dependencies as specified in that file may be installed separately. Compile the protocol buffers definition file with `protoc -I=. --python_out=. ./slow_control.proto`. Then, install the sct-slow-control package:
+
+```bash
+source activate sct-slow-control
+pip install --upgrade sct-slow-control
+```
 
 ## Configuration
 
