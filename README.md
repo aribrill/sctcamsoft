@@ -2,12 +2,14 @@
 Slow control software for the CTA SCT camera. This software allows the camera operator to control and automatically monitor the SCT camera and ancillary devices.
 
 ## Installation
-Use the provided conda environment file to create an [Anaconda](https://www.anaconda.com/) environment containing all dependencies for the slow control code using the command `conda env create -f environment.yml`. Alternatively, all the dependencies as specified in that file may be installed separately. Compile the protocol buffers definition file with `protoc -I=. --python_out=. ./slow_control.proto`. Then, install the sct-slow-control package:
+Use the provided conda environment file to create an [Anaconda](https://www.anaconda.com/) environment containing all dependencies for the slow control code using the command `conda env create -f environment.yml`. Alternatively, all the dependencies as specified in that file may be installed separately. Install the sctcamsoft package into the conda environment:
 
 ```bash
-source activate sct-slow-control
-pip install --upgrade sct-slow-control
+source activate sctcamsoft
+pip install --upgrade sctcamsoft
 ```
+
+Developer note: after making changes to the code, the package must be reinstalled for them to take effect.
 
 ## Configuration
 
@@ -31,8 +33,9 @@ The slow control software provides high-level commands to automate normal camera
 ## GUI
 The GUI is started via the main.py script in the gui folder. It expects the same parameters as the server itself - a config.yml and a commands.yml file. If testing locally, simply refer to the config and commands file in the repo's root folder.
 
-```
-python main.py ../config.yml ../commands.yml
+```bash
+cd sctcamsoft/
+python sctcamsoft/gui/main.py config.yml commands.yml
 ```
 
 If you're trying to test the GUI against the mock server on your own machine, reconfigure such that `host: localhost`. Run the mock server first (using the same config and commands file), then start the GUI. 
@@ -42,8 +45,10 @@ This folder represents an instance of the sct-slow-control server backed by virt
 
 ### Running the Server
 Run the mock server as though it were the normal server script. If using the main `config.yml` and `commands.yml`, the call should look like this:
-```
-python mock_server.py ../config.yml ../commands.yml
+
+```bash
+cd sctcamsoft/
+python sctcamsoft/mock/mock_server.py config.yml commands.yml
 ```
 
 Connect to the server using the standard `user_input.py` and `user_output.py` terminals.
@@ -51,4 +56,4 @@ Connect to the server using the standard `user_input.py` and `user_output.py` te
 ### Configuring the Virtual Hardware
 At startup, each mock device pulls its configuration from `mock_server/hardware_state.yml`. Here, you can set the default values of the signals returned by each "device" - currents, voltages, connection and on/off states, etc. 
 
-Many of the devices also a have "noisy_" option. Setting it to `true` will make each mocked value returned by the server vary a bit around the number defined in `hardware_state.yml`.
+Many of the devices also a have "noisy\_" option. Setting it to `true` will make each mocked value returned by the server vary a bit around the number defined in `hardware_state.yml`.
