@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-        name="sct-slow-control",
+        name="sct_slow_control",
         version="0.0.1",
         author="Ari Brill, Weidong Jin, Jake Powell, Marcos Santander",
         author_email="aryeh.brill@columbia.edu",
