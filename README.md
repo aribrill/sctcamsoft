@@ -30,31 +30,28 @@ Control and monitoring is available for three devices: camera fans, camera power
 
 The slow control software provides high-level commands to automate normal camera operation. Type `startup` to prepare camera for operation (Operations Manual sec. 5.1 and 5.2). When everything is connected and on, type `start_HV` to turn on HV, and `stop_HV` to turn it off. When done taking data, type `shutdown` to prepare camera for shutdown (Manual sec. 6.1).
 
-
 ## GUI
-The GUI is started via the main.py script in the gui folder. It expects the same parameters as the server itself - a config.yml and a commands.yml file. If testing locally, simply refer to the config and commands file in the repo's root folder.
+The GUI is started via the main.py script in the gui folder. It expects the same parameters as the server itself - a config.yml and a commands.yml file. If testing locally, simply refer to the config and commands file in the repo's root folder. Execute the following from the repo's root.
 
 ```bash
-cd sctcamsoft/
 python sctcamsoft/gui/main.py config.yml commands.yml
 ```
 
 If you're trying to test the GUI against the mock server on your own machine, reconfigure such that `host: localhost`. Run the mock server first (using the same config and commands file), then start the GUI. 
 
-## Mock SCT Slow Control Server
-This folder represents an instance of the sct-slow-control server backed by virtual hardware.
+## Mock-Hardware Server
+To run the server without connecting to real the SCT's real hardware, run as normal with the `--mock` option. This will instantiate virtual hardware devices commands will operate against.
 
 ### Running the Server
-Run the mock server as though it were the normal server script. If using the main `config.yml` and `commands.yml`, the call should look like this:
+If using the main `config.yml` and `commands.yml` and running from the repo's root, the call should look like this:
 
 ```bash
-cd sctcamsoft/
-python sctcamsoft/mock/mock_server.py config.yml commands.yml
+python sctcamsoft/server.py --mock config.yml commands.yml
 ```
 
-Connect to the server using the standard `user_input.py` and `user_output.py` terminals.
+Connect to the server using the standard `user_input.py` and `user_output.py` terminals, or the GUI.
 
 ### Configuring the Virtual Hardware
-At startup, each mock device pulls its configuration from `mock_server/hardware_state.yml`. Here, you can set the default values of the signals returned by each "device" - currents, voltages, connection and on/off states, etc. 
+At startup, each mock device pulls its configuration from  `config.yml`. Each device should have a `mock` attribute, and it's elements represent that device's state (currents, voltages, connection and on/off states, etc) at startup.
 
-Many of the devices also a have "noisy\_" option. Setting it to `true` will make each mocked value returned by the server vary a bit around the number defined in `hardware_state.yml`.
+Many of the device values also a have "noisy\_" option. Setting it to `true` will make the mocked value the server returns vary a bit around the number defined in `hardware_state.yml`.
