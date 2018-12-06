@@ -1,9 +1,12 @@
 # Control for camera networking
 
+__all__ = ['NetworkController',]
+
 import os
 import subprocess
 
-from slow_control_classes import *
+from sctcamsoft.slow_control_classes import *
+from sctcamsoft.controllers.mock.random_signal import RandomSignal
 
 class NetworkController(DeviceController):
 
@@ -18,10 +21,10 @@ class NetworkController(DeviceController):
             raise ConfigurationError(self.device, 'timeout',
                     "must be an integer")
 
-    def _construct_tcpdump_command(self, interface):
-        cmd = ("timeout " + str(self.timeout) + " tcpdump -p -i " + interface
-                + " 2>&1 | tail -2 | head -1 | awk '{print $1}'")
-        return cmd
+        hw_state = config['mock']
+        self._network_activity_sig = RandomSignal(
+            hw_state['avg_packet_number'], 
+            50 if hw_state['noisy_count'] else 0, 0)
 
     def execute_command(self, command):
         cmd = command.command
@@ -35,16 +38,8 @@ class NetworkController(DeviceController):
             if interface is None:
                 raise CommandArgumentError(self.device, cmd, 'interface',
                         "argument not specified")
-            tcpdump_command = self._construct_tcpdump_command(interface)
-            # Return number of packets send over interface within timeout
-            completed_process = subprocess.run(tcpdump_command, check=True,
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    encoding='ascii', shell=True)
-            try:
-                num_packets = int(completed_process.stdout)
-            except ValueError:
-                # tcpdump returned an error -> interface not connected
-                num_packets = -1
+            
+            num_packets = int(self._network_activity_sig.read())
             update = (self.device, interface, num_packets)
         else:
             raise CommandNameError(self.device, cmd)

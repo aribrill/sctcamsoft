@@ -10,10 +10,30 @@ fan:
     host: thinkpad
     port: 12347
     timeout: 5
+    mock:
+        is_connected: false
+        fans_on: false
+        voltage: 24.0
+        current: 15.0
+        noisy_signal: true
 
 network:
     timeout: 2
+    mock:
+        avg_packet_number: 200
+        noisy_count: true
 
 power:
     ip: ''
     MIB_list_path: ''
+    mock:
+        main_switch_on: true
+        supply_on: false
+        high_voltage_on: false
+        supply_current: 2.0
+        supply_nominal_voltage:  70.0
+        supply_measured_voltage: 70.0
+        hv_current: 0.5
+        hv_nominal_voltage: 70.0
+        hv_measured_voltage: 70.0 
+        noisy_signal: true

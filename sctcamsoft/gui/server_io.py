@@ -2,7 +2,7 @@ import socket
 import shlex
 import yaml
 
-import slow_control_pb2 as sc
+from sctcamsoft import slow_control_pb2 as sc
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
 
 class ServerIO(QThread):

@@ -1,6 +1,9 @@
 # conda env create -f environment.yml
-name: sct-slow-control
+name: sctcamsoft
 dependencies:
+    - numpy
+    - matplotlib
     - python=3.7.0
     - protobuf
+    - pyqt
     - pyyaml 
