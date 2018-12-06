@@ -6,7 +6,8 @@ Use the provided conda environment file to create an [Anaconda](https://www.anac
 
 ```bash
 source activate sctcamsoft
-pip install --upgrade sctcamsoft
+cd </installation/path>/sctcamsoft
+pip install --upgrade .
 ```
 
 Developer note: after making changes to the code, the package must be reinstalled for them to take effect.
