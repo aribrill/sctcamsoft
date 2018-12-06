@@ -1,7 +1,8 @@
-from sctcamsoft.slow_control_classes import *
-from hardware_state_helpers import *
+__all__ = ['PowerController',]
 
-from random_signal import RandomSignal
+from sctcamsoft.slow_control_classes import *
+
+from sctcamsoft.controllers.mock.random_signal import RandomSignal
 
 class PowerController(DeviceController):
 
@@ -18,7 +19,7 @@ class PowerController(DeviceController):
             raise ConfigurationError(self.device, 'MIB_list_path',
                     "missing configuration parameter")
 
-        hw_state = get_device_state(device)
+        hw_state = config['mock']
 
         self._is_main_switch_on = hw_state['main_switch_on']
         self._is_supply_on = hw_state['supply_on']

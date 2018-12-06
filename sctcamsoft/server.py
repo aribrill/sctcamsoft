@@ -11,9 +11,8 @@ import traceback
 import yaml
 
 from sctcamsoft.slow_control_classes import *
-from sctcamsoft.controllers.fan_control import FanController
-from sctcamsoft.controllers.network_control import NetworkController
-from sctcamsoft.controllers.power_control import PowerController
+import sctcamsoft.controllers as ctrl
+import sctcamsoft.controllers.mock as mockctrl
 import sctcamsoft.slow_control_pb2 as sc
 
 Alert = namedtuple('Alert', ['name', 'device', 'variable', 'lower_limit',
@@ -353,11 +352,13 @@ class ServerController(DeviceController):
                 traceback.print_exc()
                 print('---')
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', help='Path to slow control config file')
-    parser.add_argument('commands_file', help='Path to slow control commands file')
+    parser.add_argument('commands_file',
+            help='Path to slow control commands file')
+    parser.add_argument('--mock', action='store_true',
+            help='Run server with mock devices for testing')
     args = parser.parse_args()
 
     with open(args.config_file, 'r') as config_file:
@@ -366,11 +367,13 @@ def main():
     with open(args.commands_file, 'r') as commands_file:
         user_commands = yaml.load(commands_file)
 
+    ctrlmod = mockctrl if args.mock else ctrl
+
     devices = {
     #       'server': ServerController --> automatically included as self
-            'fan': FanController,
-            'network': NetworkController,
-            'power': PowerController
+            'fan': ctrlmod.FanController,
+            'network': ctrlmod.NetworkController,
+            'power': ctrlmod.PowerController
             }
     server = ServerController('server', config, user_commands, devices)
 

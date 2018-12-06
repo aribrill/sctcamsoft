@@ -1,10 +1,11 @@
+__all__ = ['FanController',]
+
 import socket
 import telnetlib
 import time
 
 from sctcamsoft.slow_control_classes import *
-from random_signal import RandomSignal
-from hardware_state_helpers import *
+from sctcamsoft.controllers.mock.random_signal import RandomSignal
 
 SLEEP_SECS = 3
 
@@ -28,7 +29,7 @@ class FanController(DeviceController):
             raise ConfigurationError(self.device, 'timeout',
                     "must be a number or None")
 
-        hw_state = get_device_state(device)
+        hw_state = config['mock']
         add_noise = hw_state['noisy_signal']
 
         self._isconnected = hw_state['is_connected']

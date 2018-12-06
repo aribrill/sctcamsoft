@@ -1,5 +1,7 @@
 # Control for camera power supply
 
+__all__ = ['PowerController',]
+
 import os
 import subprocess
 
