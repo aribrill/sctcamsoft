@@ -5,6 +5,7 @@ user_interface:
     host: thinkpad
     input_port: 12345
     output_port: 12346
+    header_length: 4
 
 fan:
     host: thinkpad

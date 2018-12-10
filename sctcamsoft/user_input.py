@@ -21,6 +21,7 @@ with open(args.config_file, 'r') as config_file:
     config = yaml.load(config_file)
 server_host = config['user_interface']['host']
 server_port = config['user_interface']['input_port']
+header_length = config['user_interface']['header_length']
 
 # Open a socket to the slow control server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,7 +52,9 @@ def parse_and_serialize_user_input(raw_user_input):
     message.command = command
     for user_arg, input_value in zip(user_args, user_input):
         message.args[user_arg] = input_value
-    return message.SerializeToString()
+    serialized_message = message.SerializeToString()
+    header = "{{:0{}d}}".format(header_length).format(len(serialized_message))
+    return header.encode() + serialized_message
 
 # Start a terminal for user input
 print("SCT Slow Control - Input")

@@ -25,6 +25,8 @@ class UserHandler():
         self.host = config['host']
         self.input_port = config['input_port']
         self.output_port = config['output_port']
+        self.header_length = config['header_length']
+        self.header_template = "{{:0{}d}}".format(self.header_length)
         self.selector = selectors.DefaultSelector()
         self.user_command = None
 
@@ -50,8 +52,11 @@ class UserHandler():
         self.selector.register(conn, selectors.EVENT_WRITE, self._write)
 
     def _read(self, conn, mask):
-        serialized_message = conn.recv(1024)
-        if serialized_message:
+        # Get length of the message from the header
+        header = conn.recv(self.header_length)
+        if header:
+            serialized_message = conn.recv(int(header))
+        if header and serialized_message:
             user_command = sc.UserCommand()
             user_command.ParseFromString(serialized_message)
             self.user_command = UserCommand(user_command.command,
@@ -68,7 +73,8 @@ class UserHandler():
                 update.device, update.variable, update.value = update_tuple
             self.user_update = None
             message = user_update.SerializeToString() 
-            conn.sendall(message)
+            header = self.header_template.format(len(message)).encode()
+            conn.sendall(header + message)
 
     def communicate_user(self, update):
         self.user_command = None
