@@ -5,11 +5,13 @@
 # Telnet supported added to FAN class May 27 2018 by Justin Vandenbroucke
 # Modified for DeviceController class and Python 3 Aug 14 2018 by Ari Brill
 
+__all__ = ['FanController',]
+
 import socket
 import telnetlib
 import time
 
-from slow_control_classes import *
+from sctcamsoft.slow_control_classes import *
 
 SLEEP_SECS = 3
 

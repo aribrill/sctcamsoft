@@ -8,10 +8,8 @@ Created on Tue May 15 22:01:54 2018
 
 # -*- coding: utf-8 -*-  
 
-import sys
-sys.path.append("../")
-
 import argparse
+import sys
 import yaml
   
 from PyQt5 import QtCore, QtWidgets, QtGui
@@ -48,6 +46,7 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
         self._server_handler = ServerIO(ui_config['host'], 
                                         ui_config['input_port'], 
                                         ui_config['output_port'], 
+                                        ui_config['header_length'],
                                         commands)
         self._server_handler.start()
         self.send_command.connect(self._server_handler.send_command)
@@ -61,6 +60,7 @@ class mywindow(QtWidgets.QWidget,Ui_Dialog):
 
         # Tell the server to start sending updates
         self.send_command.emit('connect_devices')
+        self.send_command.emit('set_alerts')
         self.send_command.emit('set_monitoring')
         
         self.fan = FanControls(

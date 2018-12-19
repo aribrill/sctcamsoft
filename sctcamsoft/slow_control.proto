@@ -1,3 +1,6 @@
+// Recompile with the command:
+// protoc -I=. --python_out=. ./slow_control.proto
+
 syntax = "proto3";
 
 package slow_control;

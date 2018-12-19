@@ -1,9 +1,11 @@
 # Control for camera power supply
 
+__all__ = ['PowerController',]
+
 import os
 import subprocess
 
-from slow_control_classes import *
+from sctcamsoft.slow_control_classes import *
 
 class PowerController(DeviceController):
 
