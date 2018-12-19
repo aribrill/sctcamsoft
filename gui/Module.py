@@ -15,14 +15,14 @@ class Figure_Canvas(FigureCanvas): #https://matplotlib.org/users/artists.html
 
    def display(self,data): #show 2-D data
        self.data = data
-       self.im = self.axes.imshow(data, cmap="rainbow", interpolation='nearest')
+       self.im = self.axes.imshow(data, cmap="viridis", interpolation='nearest')#rainbow
        self.fig.colorbar(self.im)
    def display2(self,data):
        self.data = data
        self.im = self.axes.imshow(data, cmap="rainbow", interpolation='nearest')
        red_patch = mpatches.Patch(color='red', label='Alert')
        green_patch = mpatches.Patch(color='lightgreen', label='Warning')
-       blue_patch = mpatches.Patch(color='blue', label='Ok')
+       blue_patch = mpatches.Patch(color='blueviolet', label='Ok')
        self.axes.legend(handles=[red_patch,green_patch,blue_patch],bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=3, mode="expand", borderaxespad=0.)  #loc3:‘lower left’ ncol=2: legend has 2 column
 

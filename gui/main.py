@@ -78,3 +78,7 @@ app = QtWidgets.QApplication(sys.argv)
 window = mywindow()
 window.show()
 sys.exit(app.exec_())
+
+
+
+
