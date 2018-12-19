@@ -39,7 +39,7 @@ print("Type 'startup' to prepare camera for operation (Operations Manual sec. "
 while True:
     raw_user_input = input('> ')
     if raw_user_input in ['exit', 'q']:
-        sock.close()
+        sc_client.close()
         break
     try:
         sc_client.send_command(raw_user_input)

@@ -67,6 +67,12 @@ class SlowControlClient():
         return (self._server_output_port is not None
                 and self._recv_msg_sock is not None)
 
+    def close(self):
+        if self._recv_msg_sock is not None:
+            self._recv_msg_sock.close()
+        if self._send_cmd_sock is not None:
+            self._send_cmd_sock.close()
+
     def send_command(self, cmd_string):
         if not self.can_send():
             raise RuntimeError('SC client is not configured to send, '
