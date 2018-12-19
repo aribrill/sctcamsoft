@@ -86,9 +86,6 @@ class SlowControlClient():
             if serialized_message:
                 user_update = sc.UserUpdate()
                 user_update.ParseFromString(serialized_message)
-                updates = [(update.device, update.variable, update.value)
-                    for update in user_update.updates]
-
-                return updates
-
+                return user_update.updates
+                
         return None

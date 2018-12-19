@@ -29,5 +29,6 @@ print("SCT Slow Control - Output")
 while True:
     updates = sc_client.recv_updates()
     if updates is not None:
-        for device, variable, value in updates:
-            print("{}: {}: {}".format(device, variable, value))
+        for update in updates:
+            print("{}: {}: {}"
+                    .format(update.device, update.variable, update.value))
