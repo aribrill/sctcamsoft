@@ -86,7 +86,7 @@ class PowerController(DeviceController):
                 # Parse output string to get numerical reading only
                 # Units are V and A
                 update_value = completed_process.stdout.split()[-2]
-                return (self.device, update_commands[cmd], update_value)
+                return (self.device, commands_with_variables[cmd], update_value)
             else:
                 for snmp_command in snmp_commands:
                     subprocess.run(snmp_command)
