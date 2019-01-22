@@ -69,12 +69,12 @@ class FanController(DeviceController):
                         "Fan connection is already open, "
                         "close before reopening.")
             self._open_connection()
+        elif cmd == "check_connection":
+            update = (self.device, 'connected', int(self._ser is not None))
         elif self._ser is None:
             raise CommunicationError(self.device)
         elif cmd == "close_connection":
             self._close_connection()
-        elif cmd == "check_connection":
-            update = (self.device, 'connected', int(self._ser is not None))
         elif cmd == "turn_on":
             self._send_cmd("PWR ON")
             time.sleep(SLEEP_SECS)
