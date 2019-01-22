@@ -10,6 +10,8 @@ cd </installation/path>/sctcamsoft
 pip install --upgrade .
 ```
 
+Compile the protocol buffers module with `protoc -I=. --python_out=. ./slow_control.proto`.
+
 Developer note: after making changes to the code, the package must be reinstalled for them to take effect.
 
 ## Configuration
